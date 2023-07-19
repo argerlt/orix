@@ -16,6 +16,13 @@ Added
   use when plotting vectors.
 - Two offsets in the stereographic coordinates (X, Y) can be given to
   ``StereographicPlot.text()`` to offset text coordinates.
+- Creating quaternions from neo-eulerian vectors via new class methods
+  ``from_rodrigues()`` and ``from_homochoric()``, replacing the now deprecated
+  ``from_neo_euler()``. ``from_rodrigues()`` accepts an angle parameter to allow passing
+  Rodrigues-Frank vectors.
+- Creating neo-eulerian vectors from quaternions via new methods ``to_axes_angles()``,
+  ``to_rodrigues()`` and ``to_homochoric()``. Rodrigues-Frank vectors can be returned
+  from ``to_rodrigues()`` by passing ``frank=True``.
 
 Changed
 -------
@@ -24,6 +31,9 @@ Changed
 
 Deprecated
 ----------
+- Creating quaternions from neo-eulerian vectors via ``from_neo_euler()`` is deprecated
+  and will be removed in v0.13. Use the existing ``from_axes_angles()`` and the new
+  ``from_rodrigues()`` and ``from_homochoric()`` instead.
 
 Removed
 -------
