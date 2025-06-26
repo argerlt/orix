@@ -168,7 +168,17 @@ class Symmetry(Rotation):
         name = self.name
         if name in ["1", "-1"]:
             return "triclinic"
-        elif name in ["211", "121", "112", "2", "m11", "1m1", "11m", "m", "2/m"]:
+        elif name in [
+            "211",
+            "121",
+            "112",
+            "2",
+            "m11",
+            "1m1",
+            "11m",
+            "m",
+            "2/m",
+        ]:
             return "monoclinic"
         elif name in ["222", "mm2", "mmm"]:
             return "orthorhombic"
@@ -218,7 +228,8 @@ class Symmetry(Rotation):
         if self.size > 1 + n.size:
             angle = 2 * np.pi * (1 + n.size) / self.size
             new_v = Vector3d.from_polar(
-                azimuth=[np.pi / 2, angle - np.pi / 2], polar=[np.pi / 2, np.pi / 2]
+                azimuth=[np.pi / 2, angle - np.pi / 2],
+                polar=[np.pi / 2, np.pi / 2],
             )
             n = Vector3d(np.vstack([n.data, new_v.data]))
 
@@ -248,7 +259,9 @@ class Symmetry(Rotation):
             # Taken from MTEX
             center = Vector3d([0.707558, -0.000403, 0.706655])
         elif name in ["m-3", "432"]:
-            n = Vector3d(np.vstack([vx.data, [0, -1, 1], [-1, 0, 1], vy.data, vz.data]))
+            n = Vector3d(
+                np.vstack([vx.data, [0, -1, 1], [-1, 0, 1], vy.data, vz.data])
+            )
             # Taken from MTEX
             center = Vector3d([0.349928, 0.348069, 0.869711])
         elif name == "-43m":
@@ -356,7 +369,9 @@ class Symmetry(Rotation):
         return Symmetry.from_generators(*generators)
 
     def __hash__(self) -> int:
-        return hash(self.name.encode() + self.data.tobytes() + self.improper.tobytes())
+        return hash(
+            self.name.encode() + self.data.tobytes() + self.improper.tobytes()
+        )
 
     # ------------------------ Class methods ------------------------- #
 
@@ -414,7 +429,9 @@ class Symmetry(Rotation):
             return {}
         return {
             Vector3d(a): b + 1
-            for a, b in zip(*np.unique(s.axis.data, axis=0, return_counts=True))
+            for a, b in zip(
+                *np.unique(s.axis.data, axis=0, return_counts=True)
+            )
         }
 
     def get_highest_order_axis(self) -> tuple[Vector3d, np.ndarray]:
@@ -534,7 +551,7 @@ class Symmetry(Rotation):
 # Triclinic
 C1 = Symmetry((1, 0, 0, 0))
 C1.name = "1"
-Ci = Symmetry([(1, 0, 0, 0), (1, 0, 0, 0)])
+Ci = Symmetry([(1, 0, 0, 0), (-1, 0, 0, 0)])
 Ci.improper = [0, 1]
 Ci.name = "-1"
 
@@ -573,7 +590,7 @@ C2h.name = "2/m"
 # Orthorhombic
 D2 = Symmetry.from_generators(C2z, C2x, C2y)
 D2.name = "222"
-C2v = Symmetry.from_generators(C2x, Csz)
+C2v = Symmetry.from_generators(C2z, Csx)
 C2v.name = "mm2"
 D2h = Symmetry.from_generators(Csz, Csx, Csy)
 D2h.name = "mmm"
@@ -584,7 +601,7 @@ C4x = Symmetry(
         (1, 0, 0, 0),
         (0.5**0.5, 0.5**0.5, 0, 0),
         (0, 1, 0, 0),
-        (-(0.5**0.5), 0.5**0.5, 0, 0),
+        ((0.5**0.5), -(0.5**0.5), 0, 0),
     ]
 )
 C4y = Symmetry(
@@ -592,7 +609,7 @@ C4y = Symmetry(
         (1, 0, 0, 0),
         (0.5**0.5, 0, 0.5**0.5, 0),
         (0, 0, 1, 0),
-        (-(0.5**0.5), 0, 0.5**0.5, 0),
+        ((0.5**0.5), 0, -(0.5**0.5), 0),
     ]
 )
 C4z = Symmetry(
@@ -600,7 +617,7 @@ C4z = Symmetry(
         (1, 0, 0, 0),
         (0.5**0.5, 0, 0, 0.5**0.5),
         (0, 0, 0, 1),
-        (-(0.5**0.5), 0, 0, 0.5**0.5),
+        ((0.5**0.5), 0, 0, -(0.5**0.5)),
     ]
 )
 C4 = Symmetry(C4z)
@@ -622,9 +639,15 @@ D4h = Symmetry.from_generators(C4h, Csx, Csy)
 D4h.name = "4/mmm"
 
 # 3-fold rotations
-C3x = Symmetry([(1, 0, 0, 0), (0.5, 0.75**0.5, 0, 0), (-0.5, 0.75**0.5, 0, 0)])
-C3y = Symmetry([(1, 0, 0, 0), (0.5, 0, 0.75**0.5, 0), (-0.5, 0, 0.75**0.5, 0)])
-C3z = Symmetry([(1, 0, 0, 0), (0.5, 0, 0, 0.75**0.5), (-0.5, 0, 0, 0.75**0.5)])
+C3x = Symmetry(
+    [(1, 0, 0, 0), (0.5, 0.75**0.5, 0, 0), (0.5, -(0.75**0.5), 0, 0)]
+)
+C3y = Symmetry(
+    [(1, 0, 0, 0), (0.5, 0, 0.75**0.5, 0), (0.5, 0, -(0.75**0.5), 0)]
+)
+C3z = Symmetry(
+    [(1, 0, 0, 0), (0.5, 0, 0, 0.75**0.5), (0.5, 0, 0, -(0.75**0.5))]
+)
 C3 = Symmetry(C3z)
 C3.name = "3"
 
@@ -714,7 +737,61 @@ _groups = [
     Oh,   #         Cubic            m-3m            m-3m       432
 ]
 # fmt: on
-_proper_groups = [C1, C2, C2x, C2y, C2z, D2, C4, D4, C3, D3x, D3y, D3, C6, D6, T, O]
+_proper_groups = [
+    C1,
+    C2,
+    C2x,
+    C2y,
+    C2z,
+    D2,
+    C4,
+    D4,
+    C3,
+    D3x,
+    D3y,
+    D3,
+    C6,
+    D6,
+    T,
+    O,
+]
+
+# the 32 crystallogrpahic point groups listed in International Tables of
+# Crystallography (ITOC), ignoring axis-specific orientations
+_ITOC_groups = [
+    C1,
+    C2,
+    C3,
+    C4,
+    C6,
+    D2,
+    D3,
+    D4,
+    D6,
+    Ci,
+    Cs,
+    S6,
+    S4,
+    C3h,
+    C2h,
+    C4h,
+    C6h,
+    C2v,
+    C3v,
+    C4v,
+    C6v,
+    D3d,
+    D3h,
+    D2h,
+    D2d,
+    D4h,
+    D6h,
+    T,
+    O,
+    Th,
+    Oh,
+    Td,
+]
 
 
 def get_distinguished_points(s1: Symmetry, s2: Symmetry = C1) -> Rotation:
