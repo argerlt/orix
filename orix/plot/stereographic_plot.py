@@ -1084,7 +1084,7 @@ class SymmetryMarker:
         # pre-define 2-fold ellipse (reused)
         e_vert = np.copy(i_vert * 2)
         e_code = np.copy(i_code)
-        e_vert[:, 1] = e_vert[:, 1] * ((1 - e_vert[:, 0] ** 2) ** 0.5) * 0.6
+        e_vert[:, 1] = e_vert[:, 1] * ((1 - e_vert[:, 0] ** 2) ** 0.5) * 0.35
         if self._folds == 1:
             # return either a normal circle, or a cirle with a dot in the
             # center if this also anie, inversion center

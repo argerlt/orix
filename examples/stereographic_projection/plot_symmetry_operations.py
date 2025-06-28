@@ -3,14 +3,19 @@ r"""
 Plot symmetry operations
 ========================
 
-This example shows one method for producing stereographic projections with
-all symmetry operators for the 32 crystallographic point groups. This method
+This example is one method for producing stereographic projections with
+symmetry operators for the 32 crystallographic point groups. This method
 loosely follows the one laid out in section 9.2 of "Structures of Materials"
 (DeGraef et.al, 2nd edition, 2012).
 
-There are generated proceedurally, and vary slightly from some more curated
-methods, such as explicitly displaying rotoinversions that are typically
-implicit only.
+There are generated proceedurally, and vary slightly from more curated
+approaches. Consider, for example, the m$\bar{3}$m, plot in the image below,
+which displays the inversion center as part of every marker (this is accurate
+but redundant). Compare this to Figure 9.11 of "Structure of Materials" where
+the inversion is only shown in the 4-fold z-axis and 3-fold <111>, or the
+International Tables of Crystallography SG221, which displays all reduntant
+inversion information plus additional information about the directionality of
+the rotational symmetry.
 """
 
 import matplotlib.pyplot as plt
@@ -54,9 +59,12 @@ point_groups = [
     Td,
 ]
 
-# Set the marker size and some colors to help differentiate elements
-s = 100
+
+# Set marker sizes and colors to help differentiate elements
+s = 120
 colors = {1: "magenta", 2: "green", 3: "red", 4: "purple", 6: "olive"}
+mirror_linewidth = 1
+mirror_color = "blue"
 
 # Create the plot and subplots using ORIX's stereographic projection
 fig, ax = plt.subplots(
@@ -90,7 +98,11 @@ for i, pg in enumerate(point_groups):
         # plot any mirror planes perpendicular to the axis first
         if np.any(m_mask * axis_mask):
             for v in pg * axis:
-                ax[i].plot(v.get_circle(), color="blue", linewidth=1)
+                ax[i].plot(
+                    v.get_circle(),
+                    color=mirror_color,
+                    linewidth=mirror_linewidth,
+                )
         # if all rotations are proper rotations, plot the appropriate symbol
         if np.all(p_mask[axis_mask]):
             # if the only element is identity, move on.
@@ -126,7 +138,7 @@ for i, pg in enumerate(point_groups):
     # Three-fold rotations around the 111 create a special subset of mirror
     # planes, which for ease we will add in by hand.
     if np.any(unique_axes.dot(Vector3d([1, 1, 1])) > 1.73):
-        m_vectors = Vector3d([[0, 0, 1], [0, 1, 1], [1, 1, 1]])
+        m_vectors = Vector3d([[0, 0, 1], [1, 1, 1]])
         for v in (pg.outer(m_vectors)).flatten().unique():
             ax[i].plot(v.get_circle(), color="blue", linewidth=1)
 

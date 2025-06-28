@@ -17,12 +17,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from diffpy.structure.spacegroups import GetSpaceGroup
 import matplotlib.figure as mfigure
 import numpy as np
 
+from orix._util import deprecated
 from orix.quaternion.rotation import Rotation
 from orix.vector import Vector3d
 
@@ -548,12 +549,40 @@ class Symmetry(Rotation):
             return figure
 
 
+# ---------------- Proceedural definitions of Point Groups ---------------- #
+# NOTE: ORIX uses Schoenflies symbols to define point groups, in part because
+# the notation is short and always begins with a letter thus making them
+# convenient python variables, and partly because it prevents the accidental
+# interpretation of Hermann-Mauguin symbols ('222' == D2, for example) as
+# Space Group numbers (SG#222, which is Pn-3n)
+
+# Additionally, there are 43 crystallographically valid Schonflies group
+# notations, but only 32 unique ones, meaning certain point groups have
+# redundant representations (S4==C4i, Ci==S2, S6==C3i, and C2==D1, for
+# example). The International Tables of Crystallography, Volume A, Section
+# 12.1 defines the 32 standard representations, but a few of the commonly
+# used redundant ones are given below for convenience.
+
+# Finally, while there are 32 Point groups, ITOC names several additional
+# projections for the non-centrosymmetric groups (ie, using x and-or y as the
+# rotation axis instead of z). These are included below as well.
+
+# For more details on how point groups can be generated, the following three
+# resources lay out three different but equally valid approaches:
+#    1)"Structure of Materials", De Graef et al, Section 9.2
+#    2)"International Tables of Crystallography: Volume A" Section 12.1
+#    3)"Crystallogrpahic Texture and Group Representations", Chi-Sing Man,Ch2
+
 # Triclinic
 C1 = Symmetry((1, 0, 0, 0))
 C1.name = "1"
 Ci = Symmetry([(1, 0, 0, 0), (-1, 0, 0, 0)])
 Ci.improper = [0, 1]
 Ci.name = "-1"
+# included redundant point group S2 == Ci
+S2 = Symmetry([(1, 0, 0, 0), (-1, 0, 0, 0)])
+S2.improper = [0, 1]
+S2.name = "-1"
 
 # Special generators
 _mirror_xy = Symmetry([(1, 0, 0, 0), (0, 0.75**0.5, -(0.75**0.5), 0)])
@@ -569,6 +598,10 @@ C2z = Symmetry([(1, 0, 0, 0), (0, 0, 0, 1)])
 C2z.name = "112"
 C2 = Symmetry(C2z)
 C2.name = "2"
+# included redundant point group D1 == C2
+D1 = Symmetry(C2z)
+D1.name = "2"
+
 
 # Mirrors
 Csx = Symmetry([(1, 0, 0, 0), (0, 1, 0, 0)])
@@ -627,6 +660,10 @@ C4.name = "4"
 S4 = Symmetry(C4)
 S4.improper = [0, 1, 0, 1]
 S4.name = "-4"
+# include redundant point group C4i == S4
+C4i = Symmetry(C4)
+C4i.improper = [0, 1, 0, 1]
+C4i.name = "-4"
 C4h = Symmetry.from_generators(C4, Cs)
 C4h.name = "4/m"
 D4 = Symmetry.from_generators(C4, C2x, C2y)
@@ -652,6 +689,9 @@ C3 = Symmetry(C3z)
 C3.name = "3"
 
 # Trigonal
+C3i = Symmetry.from_generators(C3, Ci)
+C3i.name = "-3"
+# include redundant point group S6==C3i
 S6 = Symmetry.from_generators(C3, Ci)
 S6.name = "-3"
 D3x = Symmetry.from_generators(C3, C2x)
@@ -693,105 +733,303 @@ Td.name = "-43m"
 Oh = Symmetry.from_generators(O, Ci)
 Oh.name = "m-3m"
 
-# Collections of groups for convenience
-# fmt: off
-_groups = [
-    # Schoenflies   Crystal system  International   Laue class  Proper point group
-    C1,   #         Triclinic        1              -1          1
-    Ci,   #         Triclinic       -1              -1          1
-    C2x,  #         Monoclinic       211             2/m        211
-    C2y,  #         Monoclinic       121             2/m        121
-    C2z,  #         Monoclinic       112             2/m        112
-    Csx,  #         Monoclinic       m11             2/m        1
-    Csy,  #         Monoclinic       1m1             2/m        1
-    Csz,  #         Monoclinic       11m             2/m        1
-    C2h,  #         Monoclinic       2/m             2/m        112
-    D2,   #         Orthorhombic     222             mmm        222
-    C2v,  #         Orthorhombic     mm2             mmm        211
-    D2h,  #         Orthorhombic     mmm             mmm        222
-    C4,   #         Tetragonal       4               4/m        4
-    S4,   #         Tetragonal      -4               4/m        112
-    C4h,  #         Tetragonal       4/m             4/m        4
-    D4,   #         Tetragonal       422             4/mmm      422
-    C4v,  #         Tetragonal       4mm             4/mmm      4
-    D2d,  #         Tetragonal      -42m             4/mmm      222
-    D4h,  #         Tetragonal       4/mmm           4/mmm      422
-    C3,   #         Trigonal         3              -3          3
-    S6,   #         Trigonal        -3              -3          3
-    D3x,  #         Trigonal         321            -3m         32
-    D3y,  #         Trigonal         312            -3m         312
-    D3,   #         Trigonal         32             -3m         32
-    C3v,  #         Trigonal         3m             -3m         3
-    D3d,  #         Trigonal        -3m             -3m         32
-    C6,   #         Hexagonal        6               6/m        6
-    C3h,  #         Hexagonal       -6               6/m        6
-    C6h,  #         Hexagonal        6/m             6/m        622
-    D6,   #         Hexagonal        622             6/mmm      622
-    C6v,  #         Hexagonal        6mm             6/mmm      6
-    D3h,  #         Hexagonal       -6m2             6/mmm      312
-    D6h,  #         Hexagonal        6/mmm           6/mmm      622
-    T,    #         Cubic            23              m-3        23
-    Th,   #         Cubic            m-3             m-3        23
-    O,    #         Cubic            432             m-3m       432
-    Td,   #         Cubic           -43m             m-3m       23
-    Oh,   #         Cubic            m-3m            m-3m       432
-]
-# fmt: on
-_proper_groups = [
-    C1,
-    C2,
-    C2x,
-    C2y,
-    C2z,
-    D2,
-    C4,
-    D4,
-    C3,
-    D3x,
-    D3y,
-    D3,
-    C6,
-    D6,
-    T,
-    O,
-]
 
-# the 32 crystallogrpahic point groups listed in International Tables of
-# Crystallography (ITOC), ignoring axis-specific orientations
-_ITOC_groups = [
-    C1,
-    C2,
-    C3,
-    C4,
-    C6,
-    D2,
-    D3,
-    D4,
-    D6,
-    Ci,
-    Cs,
-    S6,
-    S4,
-    C3h,
-    C2h,
-    C4h,
-    C6h,
-    C2v,
-    C3v,
-    C4v,
-    C6v,
-    D3d,
-    D3h,
-    D2h,
-    D2d,
-    D4h,
-    D6h,
-    T,
-    O,
-    Th,
-    Oh,
-    Td,
-]
+def get_point_groups(subset: str = "unique"):
+    """
+    returns a list of either all or a subset the 32 crystallographic point
+    groups. By default, this returns all 32 in the order they appear in the
+    International Tables of Crystallography (ITOC).
+
+    Parameters
+    ----------
+    subset : str, optional
+        the point group list to return. The options are as follows:
+            "unique" (default):
+                All 32 point groups in the order they appear in space groups.
+                Thus, they are grouped by crystal system and laue class
+            "all":
+                All 32 points groups, plus axis-specific permutations
+                for non-centrosymmetric groups (ie, C2 and C2x and C2y). These
+                are given in the same order as ITOC Table 10.2.2
+            "proper":
+                The 11 proper point groups (ie, Laue Classes), given in the
+                same order as "unique"
+            "proper_all":
+                The 11 proper point groups, plus axis-specific permutatoins.
+
+    Returns
+    -------
+    point groups: [Symmetry,]
+        a list of point group symmetries
+
+    Notes
+    -------
+    For convenience, the following table shows the 38 point groups contained
+    in "all", of which the other lists are subsets of.
+
+    +-------------+--------+---------------------+------------+------------+
+    | Schoenflies | System | ITOC/Herman_Mauguin | Laue class | Proper PG |
+    +-------------+--------+---------------------+------------+------------+
+    | C1          | Triclinic    |     1         |    -1      |    1       |
+    +-------------+--------+---------------------+------------+------------+
+    | Ci          | Triclinic    |    -1         |    -1      |    1       |
+    +-------------+--------+---------------------+------------+------------+
+    | C2x         | Monoclinic   |    211        |    2/m     |   211      |
+    +-------------+--------+---------------------+------------+------------+
+    | C2y         | Monoclinic   |    121        |    2/m     |   121      |
+    +-------------+--------+---------------------+------------+------------+
+    | C2          | Monoclinic   |    112        |    2/m     |   112      |
+    +-------------+--------+---------------------+------------+------------+
+    | Csx         | Monoclinic   |    m11        |    2/m     |    1       |
+    +-------------+--------+---------------------+------------+------------+
+    | Csy         | Monoclinic   |    1m1        |    2/m     |    1       |
+    +-------------+--------+---------------------+------------+------------+
+    | Csz         | Monoclinic   |    11m        |    2/m     |    1       |
+    +-------------+--------+---------------------+------------+------------+
+    | C2h         | Monoclinic   |    2/m        |    2/m     |   112      |
+    +-------------+--------+---------------------+------------+------------+
+    | D2          | Orthorhombic |    222        |    mmm     |   222      |
+    +-------------+--------+---------------------+------------+------------+
+    | C2v         | Orthorhombic |    mm2        |    mmm     |   211      |
+    +-------------+--------+---------------------+------------+------------+
+    | D2h         | Orthorhombic |    mmm        |    mmm     |   222      |
+    +-------------+--------+---------------------+------------+------------+
+    | C4          | Tetragonal   |     4         |    4/m     |    4       |
+    +-------------+--------+---------------------+------------+------------+
+    | S4          | Tetragonal   |    -4         |    4/m     |   112      |
+    +-------------+--------+---------------------+------------+------------+
+    | C4h         | Tetragonal   |    4/m        |    4/m     |    4       |
+    +-------------+--------+---------------------+------------+------------+
+    | D4          | Tetragonal   |    422        |   4/mmm    |   422      |
+    +-------------+--------+---------------------+------------+------------+
+    | C4v         | Tetragonal   |    4mm        |   4/mmm    |    4       |
+    +-------------+--------+---------------------+------------+------------+
+    | D2d         | Tetragonal   |   -42m        |   4/mmm    |   222      |
+    +-------------+--------+---------------------+------------+------------+
+    | D4h         | Tetragonal   |   4/mmm       |   4/mmm    |   422      |
+    +-------------+--------+---------------------+------------+------------+
+    | C3          | Trigonal     |     3         |    -3      |    3       |
+    +-------------+--------+---------------------+------------+------------+
+    | C3i         | Trigonal     |    -3         |    -3      |    3       |
+    +-------------+--------+---------------------+------------+------------+
+    | D3x         | Trigonal     |    321        |    -3m     |   32       |
+    +-------------+--------+---------------------+------------+------------+
+    | D3y         | Trigonal     |    312        |    -3m     |   312      |
+    +-------------+--------+---------------------+------------+------------+
+    | D3          | Trigonal     |    32         |    -3m     |   32       |
+    +-------------+--------+---------------------+------------+------------+
+    | C3v         | Trigonal     |    3m         |    -3m     |    3       |
+    +-------------+--------+---------------------+------------+------------+
+    | D3d         | Trigonal     |   -3m         |    -3m     |   32       |
+    +-------------+--------+---------------------+------------+------------+
+    | C6          | Hexagonal    |     6         |    6/m     |    6       |
+    +-------------+--------+---------------------+------------+------------+
+    | C3h         | Hexagonal    |    -6         |    6/m     |    6       |
+    +-------------+--------+---------------------+------------+------------+
+    | C6h         | Hexagonal    |    6/m        |    6/m     |   622      |
+    +-------------+--------+---------------------+------------+------------+
+    | D6          | Hexagonal    |    622        |   6/mmm    |   622      |
+    +-------------+--------+---------------------+------------+------------+
+    | C6v         | Hexagonal    |    6mm        |   6/mmm    |    6       |
+    +-------------+--------+---------------------+------------+------------+
+    | D3h         | Hexagonal    |   -6m2        |   6/mmm    |   312      |
+    +-------------+--------+---------------------+------------+------------+
+    | D6h         | Hexagonal    |   6/mmm       |   6/mmm    |   622      |
+    +-------------+--------+---------------------+------------+------------+
+    | T           | Cubic        |    23         |    m-3     |   23       |
+    +-------------+--------+---------------------+------------+------------+
+    | Th          | Cubic        |    m-3        |    m-3     |   23       |
+    +-------------+--------+---------------------+------------+------------+
+    | O           | Cubic        |    432        |   m-3m     |   432      |
+    +-------------+--------+---------------------+------------+------------+
+    | Td          | Cubic        |   -43m        |   m-3m     |   23       |
+    +-------------+--------+---------------------+------------+------------+
+    | Oh          | Cubic        |    m-3m       |   m-3m     |   432      |
+    +-------------+--------+---------------------+------------+------------+
+
+    """
+    options = ["all", "unique", "SoM", "proper", "proper_all"]
+    assert np.isin(subset, options)
+
+    if subset == "all":
+        return [
+            # Triclinic
+            C1,
+            Ci,
+            # Monoclinic
+            C2,
+            C2x,
+            C2y,
+            Cs,
+            Csx,
+            Csy,
+            C2h,
+            # Orthorhombic
+            D2,
+            C2v,
+            D2h,
+            # Tetragonal
+            C4,
+            S4,
+            C4h,
+            D4,
+            C4v,
+            D2d,
+            D4h,
+            # Trigonal
+            C3,
+            C3i,
+            D3,
+            D3x,
+            D3y,
+            C3v,
+            D3d,
+            # Hexagonal
+            C6,
+            C3h,
+            C6h,
+            D6,
+            C6v,
+            D3h,
+            D6h,
+            # cubic
+            T,
+            Th,
+            O,
+            Td,
+            Oh,
+        ]
+
+    elif subset == "unique":
+        return [
+            # Triclinic
+            C1,
+            Ci,
+            # Monoclinic
+            C2,
+            Cs,
+            C2h,
+            # Orthorhombic
+            D2,
+            C2v,
+            D2h,
+            # Tetragonal
+            C4,
+            S4,
+            C4h,
+            D4,
+            C4v,
+            D2d,
+            D4h,
+            # Trigonal
+            C3,
+            C3i,
+            D3,
+            C3v,
+            D3d,
+            # Hexagonal
+            C6,
+            C3h,
+            C6h,
+            D6,
+            C6v,
+            D3h,
+            D6h,
+            # cubic
+            T,
+            Th,
+            O,
+            Td,
+            Oh,
+        ]
+    elif subset == "proper":
+        return [
+            # Triclinic
+            C1,
+            # Monoclinic
+            C2,
+            # Orthorhombic
+            D2,
+            # Tetragonal
+            C4,
+            # Trigonal
+            C3,
+            D3,
+            # Hexagonal
+            C6,
+            D6,
+            # cubic
+            T,
+            O,
+        ]
+    elif subset == "proper_all":
+        return [
+            # Triclinic
+            C1,
+            # Monoclinic
+            C2,
+            C2x,
+            C2y,
+            # Orthorhombic
+            D2,
+            # Tetragonal
+            C4,
+            # Trigonal
+            C3,
+            D3,
+            D3x,
+            D3y,
+            # Hexagonal
+            C6,
+            D6,
+            # cubic
+            T,
+            O,
+        ]
+    elif subset == "SoM":
+        return [
+            # Cyclic
+            C1,
+            C2,
+            C3,
+            C4,
+            C6,
+            # Dihedral
+            D2,
+            D3,
+            D4,
+            D6,
+            # Cyclic plus inversion (\ba{n})
+            Ci,
+            Cs,
+            C3i,
+            S4,
+            C3h,
+            # Cyclic plus perpendicular mirrors (n/m)
+            C2h,
+            C4h,
+            C6h,
+            # Cyclic plus vertical mirrors (nm)
+            C2v,
+            C3v,
+            C4v,
+            C6v,
+            # Dihedral plus diagonal mirrors (\bar{n} m)
+            D3d,
+            D2d,
+            D3h,
+            # Dihedral with vertical and perpendicular mirros (n/m m)
+            D2h,
+            D4h,
+            D6h,
+            # Combining cyclic (n1 n2)
+            T,
+            O,
+            # combining cyclic and mirrors
+            Th,
+            Td,
+            Oh,
+        ]
 
 
 def get_distinguished_points(s1: Symmetry, s2: Symmetry = C1) -> Rotation:
@@ -813,6 +1051,9 @@ def get_distinguished_points(s1: Symmetry, s2: Symmetry = C1) -> Rotation:
     distinguished_points = s1.outer(s2).antipodal.unique(antipodal=False)
     return distinguished_points[distinguished_points.angle > 0]
 
+
+_groups = get_point_groups("all")
+_groups = get_point_groups("proper_all")
 
 spacegroup2pointgroup_dict = {
     "PG1": {"proper": C1, "improper": C1},
@@ -857,22 +1098,62 @@ spacegroup2pointgroup_dict = {
 }
 
 
+@deprecated(
+    since="0.14",
+    removal="0.15",
+    alternative="symmetry.get_point_group_from_space_group",
+)
 def get_point_group(space_group_number: int, proper: bool = False) -> Symmetry:
-    """Map a space group number to its (proper) point group.
+    r"""
+    This function has been renamed to
+    `orix.quaternion.symmetry.get_point_group_from_space_group`.
+    """
+    return get_point_group_from_space_group(space_group_number, proper)
+
+
+def get_point_group_from_space_group(
+    space_group_number: Union(int, str), proper: bool = False
+) -> Symmetry:
+    """
+    Maps a space group number or name to a crystallographic point group.
 
     Parameters
     ----------
-    space_group_number
-        Between 1 and 231.
-    proper
+    space_group_number: int between 1-231,  or str
+        If is an int(n) or str(int(n)) where n is between 1 and 231, it will
+        return the point group of the nth space group, as defined by the
+        International Tables of Crystallogrphy. Otherwise, it will be passed
+        to diffpy's dictionary of space group names for interpretation.
+
+        Thus, 222 and '222' will both return symmetry.Oh (ie "432", the point
+        group of SG#222==Pn-3n), but 'P222' will return symmetry.D2
+        (ie "222", the proper point group of SG#16=='P222').
+
+    proper: bool
         Whether to return the point group with proper rotations only
-        (``True``), or just the point group (``False``). Default is
+        (``True``), or the full point group (``False``). Default is
         ``False``.
 
     Returns
-    -------
+    ----------
     point_group
         One of the 11 proper or 32 point groups.
+
+    Notes:
+    ----------
+    By default, this maps to one of the 32 crystallographic point groups.
+    Passing in proper=True will instead map to one of the 11 proper
+    crystallographic point groups, ie the Laue classes observable in
+    techniques such as EBSD.
+
+    This function uses diffpy.structure.spacegroups to convert names to
+    space group IDs, and has some allowances for spelling and spacing
+    differences. to see a full list of all name options avaiable, use the
+    following snippet:
+
+    >>> import diffpy.structure.spacegroups as sg
+    >>> sg._buildSGLookupTable()
+    >>> sg._sg_lookup_table.keys()
 
     Examples
     --------
