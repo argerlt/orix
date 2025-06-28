@@ -146,9 +146,7 @@ class StereographicPlot(maxes.Axes):
 
     def plot(
         self,
-        *args: Union[
-            Vector3d, Tuple[float, float], Tuple[np.ndarray, np.ndarray]
-        ],
+        *args: Union[Vector3d, Tuple[float, float], Tuple[np.ndarray, np.ndarray]],
         **kwargs,
     ):
         """Draw straight lines between vectors.
@@ -180,9 +178,7 @@ class StereographicPlot(maxes.Axes):
 
     def scatter(
         self,
-        *args: Union[
-            Vector3d, Tuple[float, float], Tuple[np.ndarray, np.ndarray]
-        ],
+        *args: Union[Vector3d, Tuple[float, float], Tuple[np.ndarray, np.ndarray]],
         **kwargs,
     ):
         """A scatter plot of vectors.
@@ -230,9 +226,7 @@ class StereographicPlot(maxes.Axes):
 
     def text(
         self,
-        *args: Union[
-            Vector3d, Tuple[float, float], Tuple[np.ndarray, np.ndarray]
-        ],
+        *args: Union[Vector3d, Tuple[float, float], Tuple[np.ndarray, np.ndarray]],
         offset: Optional[Tuple[float, float]] = None,
         **kwargs,
     ):
@@ -289,9 +283,7 @@ class StereographicPlot(maxes.Axes):
         if value in ["upper", "lower"]:
             self._hemisphere = value
         else:
-            raise ValueError(
-                f"Hemisphere must be 'upper' or 'lower', not {value}."
-            )
+            raise ValueError(f"Hemisphere must be 'upper' or 'lower', not {value}.")
 
     @property
     def pole(self) -> int:
@@ -379,9 +371,7 @@ class StereographicPlot(maxes.Axes):
 
     def draw_circle(
         self,
-        *args: Union[
-            Vector3d, Tuple[float, float], Tuple[np.ndarray, np.ndarray]
-        ],
+        *args: Union[Vector3d, Tuple[float, float], Tuple[np.ndarray, np.ndarray]],
         opening_angle: Union[float, np.ndarray] = np.pi / 2,
         steps: int = 100,
         reproject: bool = False,
@@ -434,10 +424,7 @@ class StereographicPlot(maxes.Axes):
         if x.size == 0:
             return
 
-        if (
-            isinstance(opening_angle, np.ndarray)
-            and opening_angle.size == visible.size
-        ):
+        if isinstance(opening_angle, np.ndarray) and opening_angle.size == visible.size:
             opening_angle = opening_angle[visible]
 
         # Get set of `steps` vectors delineating a circle per vector
@@ -624,9 +611,7 @@ class StereographicPlot(maxes.Axes):
             show_grid is None
             and self._stereographic_grid in [None, False]
             or show_grid is None
-            and (
-                azimuth_resolution is not None or polar_resolution is not None
-            )
+            and (azimuth_resolution is not None or polar_resolution is not None)
             or show_grid is True
         ) and hasattr(self, "patch"):
             self._azimuth_grid(azimuth_resolution)
@@ -661,13 +646,9 @@ class StereographicPlot(maxes.Axes):
             Keyword arguments passed to :meth:`scatter`.
         """
         if fold not in [1, 2, 3, 4, 6]:
-            raise ValueError(
-                "Can only plot 1-, 2-, 3-, 4- or 6-fold elements."
-            )
+            raise ValueError("Can only plot 1-, 2-, 3-, 4- or 6-fold elements.")
 
-        marker = SymmetryMarker(
-            v, size=kwargs.pop("s", 1), folds=fold, inner=inner
-        )
+        marker = SymmetryMarker(v, size=kwargs.pop("s", 1), folds=fold, inner=inner)
 
         new_kwargs = dict(zorder=ZORDER["symmetry_marker"], clip_on=False)
         for k, v in new_kwargs.items():
@@ -703,9 +684,7 @@ class StereographicPlot(maxes.Axes):
         if resolution is not None:
             self._azimuth_resolution = resolution
 
-        azimuth_start = np.arange(
-            0, np.pi, np.radians(self._azimuth_resolution)
-        )
+        azimuth_start = np.arange(0, np.pi, np.radians(self._azimuth_resolution))
         polar = np.full(azimuth_start.size, np.pi / 2)
         if self.hemisphere == "lower":
             polar += 1e-9
@@ -725,15 +704,11 @@ class StereographicPlot(maxes.Axes):
 
         label = "sa_azimuth_grid"
         lines = np.stack(((x_start, x_end), (y_start, y_end))).T
-        lines_collection = mcollections.LineCollection(
-            lines, label=label, **kwargs
-        )
+        lines_collection = mcollections.LineCollection(lines, label=label, **kwargs)
         has_collection, index = self._has_collection(label, self.collections)
         if has_collection:
             self.collections[index].remove()
-        has_sector, sector_index = self._has_collection(
-            "sa_sector", self.patches
-        )
+        has_sector, sector_index = self._has_collection("sa_sector", self.patches)
         if has_sector:
             lines_collection.set_clip_path(self.patches[sector_index])
         self.add_collection(lines_collection)
@@ -796,18 +771,14 @@ class StereographicPlot(maxes.Axes):
         has_collection, index = self._has_collection(label, self.collections)
         if has_collection:
             self.collections[index].remove()
-        has_sector, sector_index = self._has_collection(
-            "sa_sector", self.patches
-        )
+        has_sector, sector_index = self._has_collection("sa_sector", self.patches)
         if has_sector:
             circles_collection.set_clip_path(self.patches[sector_index])
         self.add_collection(circles_collection)
 
     def _prepare_to_call_inherited_method(
         self,
-        args: Union[
-            Vector3d, Tuple[float, float], Tuple[np.ndarray, np.ndarray]
-        ],
+        args: Union[Vector3d, Tuple[float, float], Tuple[np.ndarray, np.ndarray]],
         kwargs: dict,
         new_kwargs: Optional[dict] = None,
         sort: bool = False,
@@ -846,16 +817,12 @@ class StereographicPlot(maxes.Axes):
         if new_kwargs is not None:
             for k, v in new_kwargs.items():
                 updated_kwargs.setdefault(k, v)
-        x, y, visible = self._pretransform_input(
-            args, sort=sort, offset=offset
-        )
+        x, y, visible = self._pretransform_input(args, sort=sort, offset=offset)
         return x, y, visible, updated_kwargs
 
     def _pretransform_input(
         self,
-        values: Union[
-            Vector3d, Tuple[float, float], Tuple[np.ndarray, np.ndarray]
-        ],
+        values: Union[Vector3d, Tuple[float, float], Tuple[np.ndarray, np.ndarray]],
         sort: bool = False,
         offset: Optional[Tuple[float, float]] = None,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -948,11 +915,7 @@ def _get_array_of_values(
         of ``True`` elements in ``visible``.
     """
     n = visible.size
-    if (
-        not isinstance(value, str)
-        and hasattr(value, "__iter__")
-        and len(value) != n
-    ):
+    if not isinstance(value, str) and hasattr(value, "__iter__") and len(value) != n:
         value = value[0]
     if isinstance(value, str) or not hasattr(value, "__iter__"):
         value = [value] * n
@@ -980,9 +943,7 @@ def _is_visible(polar: np.ndarray, pole: int) -> np.ndarray:
         return polar >= np.pi / 2
 
 
-def _order_in_hemisphere(
-    polar: np.ndarray, pole: int
-) -> Union[np.ndarray, None]:
+def _order_in_hemisphere(polar: np.ndarray, pole: int) -> Union[np.ndarray, None]:
     """Return order of vectors based on polar angles, so that the ones
     corresponding to vectors visible in this hemisphere are shifted to
     the start of the arrays.
@@ -1128,8 +1089,6 @@ class SymmetryMarker:
             azimuth -= np.pi / 2
             azimuth[self._vector.polar > 1e-6] -= np.pi / 2
 
-        trans = [
-            mtransforms.Affine2D().rotate(a + (np.pi / 2)) for a in azimuth
-        ]
+        trans = [mtransforms.Affine2D().rotate(a + (np.pi / 2)) for a in azimuth]
 
         return [marker.deepcopy().transformed(i) for i in trans]

@@ -20,6 +20,7 @@ the rotational symmetry.
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 from orix import plot
 from orix.quaternion.symmetry import *
 from orix.vector import Vector3d
@@ -122,18 +123,14 @@ for i, pg in enumerate(point_groups):
                 min_ang = np.abs(pg[r_mask * axis_mask].angle).min()
                 f = np.around(2 * np.pi / min_ang).astype(int)
             c = colors[f]
-            ax[i].symmetry_marker(
-                (pg * axis), fold=f, s=s, color=c, inner="dot"
-            )
+            ax[i].symmetry_marker((pg * axis), fold=f, s=s, color=c, inner="dot")
             decorated_axes.append(axis * 1)
         # the other option (besides empty) is a rotoinversion
         elif np.any(roto_mask[axis_mask]):
             min_ang = np.abs(pg[roto_mask * axis_mask].angle).min()
             f = np.around(2 * np.pi / min_ang).astype(int)
             c = colors[f]
-            ax[i].symmetry_marker(
-                (pg * axis), fold=f, s=s, color=c, inner="half"
-            )
+            ax[i].symmetry_marker((pg * axis), fold=f, s=s, color=c, inner="half")
             decorated_axes.append(axis * 1)
     # Three-fold rotations around the 111 create a special subset of mirror
     # planes, which for ease we will add in by hand.
