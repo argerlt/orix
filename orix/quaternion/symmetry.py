@@ -136,13 +136,14 @@ class Symmetry(Rotation):
               "1": (360, 180, 360),  # Triclinic
             "211": (360,  90, 360),  # Monoclinic
             "121": (360,  90, 360),
-            "112": (360, 180, 180),
+              "2": (360, 180, 180),
             "222": (360,  90, 180),  # Orthorhombic
               "4": (360, 180,  90),  # Tetragonal
             "422": (360,  90,  90),
               "3": (360, 180, 120),  # Trigonal
-            "312": (360,  90, 120),
              "32": (360,  90, 120),
+            "321": (360,  90, 120),
+            "312": (360,  90, 120),
               "6": (360, 180,  60),  # Hexagonal
             "622": (360,  90,  60),
              "23": (360,  90, 180),  # Cubic
@@ -293,9 +294,9 @@ class Symmetry(Rotation):
         name = self.proper_subgroup.name
         if name in ["1", "211", "121"]:
             return 1
-        elif name in ["112", "222", "23"]:
+        elif name in ["112", "222", "23", "2"]:
             return 2
-        elif name in ["3", "312", "32"]:
+        elif name in ["3", "312", "32", "321"]:
             return 3
         elif name in ["4", "422", "432"]:
             return 4
@@ -336,10 +337,10 @@ class Symmetry(Rotation):
         if name in ["1", "211", "121"]:
             # All proper operations
             rot = self[~self.improper]
-        elif name in ["112", "3", "4", "6"]:
+        elif name in ["2", "3", "4", "6"]:
             # Identity
             rot = self[0]
-        elif name in ["222", "422", "622", "32"]:
+        elif name in ["222", "422", "622", "32", "321"]:
             # Two-fold rotation about a-axis perpendicular to c-axis
             rot = symmetry_axis(-vx, 2)
         elif name == "312":
@@ -1053,7 +1054,7 @@ def get_distinguished_points(s1: Symmetry, s2: Symmetry = C1) -> Rotation:
 
 
 _groups = get_point_groups("all")
-_groups = get_point_groups("proper_all")
+_proper_groups = get_point_groups("proper_all")
 
 spacegroup2pointgroup_dict = {
     "PG1": {"proper": C1, "improper": C1},
