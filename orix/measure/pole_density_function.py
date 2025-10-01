@@ -22,6 +22,7 @@ from scipy.ndimage import gaussian_filter
 
 from orix.projections.stereographic import StereographicProjection
 from orix.quaternion.symmetry import Symmetry
+from orix.quaternion import Rotation
 from orix.vector.vector3d import Vector3d
 
 
@@ -85,7 +86,7 @@ def pole_density_function(
     orix.plot.StereographicPlot.pole_density_function
     orix.vector.Vector3d.pole_density_function
     """
-    from orix.sampling.S2_sampling import _sample_S2_equal_area_coordinates
+    from orix.sampling._polyhedral_sampling import _edge_grid_spherified_corner_cube
 
     hemisphere = hemisphere.lower()
 
@@ -107,118 +108,143 @@ def pole_density_function(
             "Accepts only one (Vector3d) or two (azimuth, polar) input arguments."
         )
 
+    if weights is None:
+        weights = np.ones(v.size)
+
     if symmetry is not None:
-        v = v.in_fundamental_sector(symmetry)
-        # To help with aliasing after reprojection into point group
-        # fundamental sector in the inverse pole figure case, the
-        # initial sampling is performed at half the angular resolution
-        resolution /= 2
+        v = symmetry.outer(v.flatten())
+        weights = np.stack([weights.flatten() for i in range(symmetry.size)], axis=1)
+    v = v.flatten()
+    weights = weights.flatten()
 
-    azimuth, polar, _ = v.to_polar()
-    # np.histogram2d expects 1d arrays
-    azimuth, polar = np.ravel(azimuth), np.ravel(polar)
-    if not azimuth.size:
-        raise ValueError("`azimuth` and `polar` angles have 0 size.")
+    # Create the 2D histogram bins that are reused for each face.
+    center_to_edge_EA = _edge_grid_spherified_corner_cube(resolution / 3)
+    bin_edges = np.arctan(np.hstack([center_to_edge_EA, 1]))
+    bin_centers = (bin_edges[1:] + bin_edges[:-1]) / 2
+    x_ang, y_ang = np.meshgrid(bin_centers, bin_centers)
+    tanx_ang = np.tan(x_ang)
+    tany_ang = np.tan(y_ang)
+    sz = bin_centers.size
+    v_grid = Vector3d(np.stack([tanx_ang, tany_ang, tanx_ang * 0 + 1]).T)
 
-    # Generate equal area mesh on S2
-    azimuth_coords, polar_coords = _sample_S2_equal_area_coordinates(
-        resolution,
-        hemisphere=hemisphere,
-        azimuth_endpoint=True,
-    )
-    azimuth_grid, polar_grid = np.meshgrid(azimuth_coords, polar_coords, indexing="ij")
-    # generate histogram in angular space
-    hist, *_ = np.histogram2d(
-        azimuth,
-        polar,
-        bins=(azimuth_coords, polar_coords),
-        density=False,
-        weights=weights,
+    # Define the 6 rotations that rotate an (x,y,1) mesh to each of the 6 faces.
+    # Ordering is [100], [-100], [010], [0-10], [001], [00-1].
+    face_rotations = Rotation.from_axes_angles(
+        [[0, 1, 0], [0, 1, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0]],
+        [90, 270, 90, 270, 0, 180],
+        degrees=True,
     )
 
-    # "wrap" along azimuthal axis, "reflect" along polar axis
-    mode = ("wrap", "reflect")
-    # apply broadening in angular space
-    hist = gaussian_filter(hist, sigma / resolution, mode=mode)
+    # Define the 6 face-centered vectors, use their dot product to assign
+    # each observation to a face, then bin observations per-face.
+    hist = np.zeros([6, bin_centers.size, bin_centers.size])
+    face_center_vecs = face_rotations.inv() * (Vector3d.zvector())
+    face_index = np.argmax(face_center_vecs.dot_outer(v), 0)
+    for idx, face_rot in enumerate(face_rotations):
+        if np.isin(idx, face_index):
+            mask = face_index == idx
+            x, y, z = (face_rot * (v[mask])).xyz
+            cube_xy = np.stack([np.arctan(x / z), np.arctan(y / z)])
+            w = weights[mask]
+            hist[idx] = np.histogram2d(*cube_xy, [bin_edges, bin_edges], weights=w)[0]
 
-    # In the case of inverse pole figure, accumulate all values outside
-    # of the point group fundamental sector back into correct bin within
-    # fundamental sector
-    if symmetry is not None:
-        # compute histogram bin centers in azimuth and polar coords
-        azimuth_center_grid, polar_center_grid = np.meshgrid(
-            azimuth_coords[:-1] + np.diff(azimuth_coords) / 2,
-            polar_coords[:-1] + np.diff(polar_coords) / 2,
-            indexing="ij",
-        )
-        v_center_grid = Vector3d.from_polar(
-            azimuth=azimuth_center_grid, polar=polar_center_grid
-        ).unit
-        # fold back in into fundamental sector
-        v_center_grid_fs = v_center_grid.in_fundamental_sector(symmetry)
-        azimuth_center_fs, polar_center_fs, _ = v_center_grid_fs.to_polar()
-        azimuth_center_fs = azimuth_center_fs.ravel()
-        polar_center_fs = polar_center_fs.ravel()
-
-        # Generate coorinates with user-defined resolution.
-        # When `symmetry` is defined, the initial grid was calculated
-        # with `resolution = resolution / 2`
-        azimuth_coords_res2, polar_coords_res2 = _sample_S2_equal_area_coordinates(
-            2 * resolution,
-            hemisphere=hemisphere,
-            azimuth_endpoint=True,
-        )
-        azimuth_res2_grid, polar_res2_grid = np.meshgrid(
-            azimuth_coords_res2, polar_coords_res2, indexing="ij"
-        )
-        v_res2_grid = Vector3d.from_polar(
-            azimuth=azimuth_res2_grid, polar=polar_res2_grid
-        )
-
-        # calculate histogram values for vectors folded back into
-        # fundamental sector
-        i = np.digitize(azimuth_center_fs, azimuth_coords_res2[1:-1])
-        j = np.digitize(polar_center_fs, polar_coords_res2[1:-1])
-        # recompute histogram
-        temp = np.zeros((azimuth_coords_res2.size - 1, polar_coords_res2.size - 1))
-        # add hist data to new histogram without buffering
-        np.add.at(temp, (i, j), hist.ravel())
-
-        # get new histogram bins centers to compute histogram mask
-        azimuth_center_res2_grid, polar_center_res2_grid = np.meshgrid(
-            azimuth_coords_res2[:-1] + np.ediff1d(azimuth_coords_res2) / 2,
-            polar_coords_res2[:-1] + np.ediff1d(polar_coords_res2) / 2,
-            indexing="ij",
-        )
-        v_center_res2_grid = Vector3d.from_polar(
-            azimuth=azimuth_center_res2_grid, polar=polar_center_res2_grid
-        ).unit
-
-        # compute histogram data array as masked array
-        hist = np.ma.array(
-            temp, mask=~(v_center_res2_grid <= symmetry.fundamental_sector)
-        )
-        # calculate bin vertices
-        x, y = sp.vector2xy(v_res2_grid)
-        x, y = x.reshape(v_res2_grid.shape), y.reshape(v_res2_grid.shape)
-    else:
-        # all points valid in stereographic projection
-        hist = np.ma.array(hist, mask=np.zeros_like(hist, dtype=bool))
-        # calculate bin vertices
-        v_grid = Vector3d.from_polar(azimuth=azimuth_grid, polar=polar_grid).unit
-        x, y = sp.vector2xy(v_grid)
-        x, y = x.reshape(v_grid.shape), y.reshape(v_grid.shape)
-
-    # Normalize by the average number of counts per cell on the
-    # unit sphere to calculate in terms of Multiples of Random
-    # Distribution (MRD). See :cite:`rohrer2004distribution`.
-    # as `hist` is a masked array, only valid (unmasked) values are
-    # used in this computation
     if mrd:
-        hist = hist / hist.mean()
+        SA_relative_weight = (
+            1
+            / (tanx_ang**2 + tany_ang**2 + 1)
+            / (np.cos(x_ang) * np.cos(y_ang))
+            / (1 - 0.5 * (np.sin(x_ang) * np.sin(y_ang)) ** 2)
+        ) / 6
+        hist = hist / SA_relative_weight[np.newaxis, :, :]
+        hist = hist / np.mean(hist)
+
+    stdev_3_in_px = 3 * sigma * 2 / resolution
+    if stdev_3_in_px > 1:
+        t = 1 / 3
+        N = int(np.ceil(((sigma * 3 / resolution) ** 2) / t))
+        hist = _smooth_gnom_cube_histograms(hist, t, N)
+        print(N)
+
+    # reinterpolate onto  polar-azimuth grid
+    v_geom_coords = (face_rotations.inv()).outer(v_grid)
+    p_bins = np.linspace(0, 360, int(np.ceil(360 / resolution)) + 1) * np.pi / 180
+    az_bins = np.linspace(0, 90, int(np.ceil(90 / resolution)) + 1) * np.pi / 180
+    p_centers = (p_bins[1:] + p_bins[:-1]) / 2
+    az_centers = (az_bins[1:] + az_bins[:-1]) / 2
+    v_regridded = Vector3d.from_polar(
+        *np.meshgrid(p_centers, az_centers, indexing="ij")
+    )
+
+    pol_crd, az_crd = [x.flatten() for x in v_geom_coords.to_polar()[:2]]
+    regridded_hist = np.histogram2d(
+        pol_crd, az_crd, [p_bins, az_bins], weights=hist.flatten()
+    )[0]
+
+    mask = ~(v_regridded <= symmetry.fundamental_sector)
+    regridded_hist = np.ma.array(regridded_hist / np.sin(az_centers), mask=mask)
+    x, y = sp.vector2xy(v_regridded)
+    x, y = x.reshape(v_regridded.shape), y.reshape(v_regridded.shape)
+
+    if mrd:
+        regridded_hist = regridded_hist / regridded_hist.mean()
 
     if log:
         # +1 to avoid taking the log of 0
-        hist = np.log(hist + 1)
+        regridded_hist = np.log(regridded_hist + 1)
 
-    return hist, (x, y)
+    return regridded_hist, (x, y)
+
+
+# %%
+def _smooth_gnom_cube_histograms(
+    histograms: np.ndarray[float],
+    step_parameter: float,
+    iterations: int = 1,
+) -> np.ndarray[float]:
+    """Histograms shape is (6, n_nbins, n_bins) and edge connectivity
+    is as according to the rest of this file.
+    """
+    output_histogram = np.copy(histograms)
+    diffused_weight = np.zeros(histograms.shape)
+
+    for n in range(iterations):
+
+        diffused_weight[...] = 0
+
+        # Diffuse on faces
+        for fi in range(6):
+            diffused_weight[fi, 1:, :] += output_histogram[fi, :-1, :]
+            diffused_weight[fi, :-1, :] += output_histogram[fi, 1:, :]
+            diffused_weight[fi, :, 1:] += output_histogram[fi, :, :-1]
+            diffused_weight[fi, :, :-1] += output_histogram[fi, :, 1:]
+
+        aligned_edge_pairs = (
+            ((0, slice(None), 0), (3, 0, slice(None))),  # +x+y
+            ((1, slice(None), -1), (2, -1, slice(None))),  # +x+y
+            ((0, -1, slice(None)), (4, 0, slice(None))),  # +x+y
+            ((1, 0, slice(None)), (4, -1, slice(None))),  # +x+y
+            ((2, slice(None), 0), (4, slice(None), -1)),  # +x+y
+            ((3, slice(None), 0), (5, slice(None), -1)),  # +x+y
+        )
+        reversed_edge_pairs = (
+            ((0, slice(None), -1), (2, 0, slice(None))),  # +x+y
+            ((1, slice(None), 0), (3, -1, slice(None))),  # +x+y
+            ((1, -1, slice(None)), (5, -1, slice(None))),  # +x+y
+            ((0, 0, slice(None)), (5, 0, slice(None))),  # +x+y
+            ((2, slice(None), -1), (4, slice(None), 0)),  # +x+y
+            ((3, slice(None), -1), (5, slice(None), 0)),  # +x+y
+        )
+
+        for edge_1, edge_2 in aligned_edge_pairs:
+            diffused_weight[edge_1] += output_histogram[edge_2]
+            diffused_weight[edge_2] += output_histogram[edge_1]
+        for edge_1, edge_2 in reversed_edge_pairs:
+            diffused_weight[edge_1] += output_histogram[edge_2][::-1]
+            diffused_weight[edge_2] += output_histogram[edge_1][::-1]
+
+        # Add to output
+        output_histogram = (
+            1 - step_parameter
+        ) * output_histogram + diffused_weight / 4 * step_parameter
+
+    return output_histogram
