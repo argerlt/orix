@@ -299,6 +299,9 @@ class CrystalMap:
             prop = {}
         self._prop = CrystalMapProperties(prop, id=self.id)
 
+        # record the original grid shape, which is useful for plotting
+        self._orig_shape = copy.deepcopy(self.shape)
+
     def _set_grid_from_indices(
         self, indices: np.ndarray, spacing: np.ndarray, origin: np.ndarray
     ):
@@ -306,21 +309,23 @@ class CrystalMap:
         integer indices values"""
         indices = np.atleast_2d(indices)
         if len(indices.shape) != 2:
-            ValueError("indices must be interpretable as a two-dimensional array")
+            raise ValueError("indices must be interpretable as two-dimensional array")
         if not np.issubdtype(indices.dtype, np.integer):
-            ValueError("indices must be an array of integers")
+            raise ValueError("indices must be an array of integers")
         dims = indices.shape[0]
         if not np.isin(dims, (1, 2, 3)):
-            ValueError("indices must have a shape of (d, N), where 'd' is 1, 2, or 3")
+            raise ValueError("indices must have a shape of (self.size,self.ndims")
         size = indices.shape[1]
         if size != self._rotations.shape[0]:
-            ValueError("There must be the same number of indices as there are pixels")
+            raise ValueError(
+                "There must be the same number of indices as there are pixels"
+            )
 
         if spacing is None:
             spacing = np.ones(dims, dtype=np.float32)
         spacing = np.atleast_1d(spacing).flatten()
         if spacing.size != dims:
-            ValueError(
+            raise ValueError(
                 "Spacing should have {} values, not {}".format(dims, spacing.size)
             )
 
@@ -328,11 +333,11 @@ class CrystalMap:
             spacing = np.zeros(dims, dtype=np.float32)
         spacing = np.atleast_1d(spacing).flatten()
         if spacing.size != dims:
-            ValueError(
+            raise ValueError(
                 "origin should have {} values, not {}".format(dims, spacing.size)
             )
 
-        if self._indexing_order == "xyz":
+        if self.indexing_order == "xyz":
             indices = indices[::-1, :]
             origin = origin[::-1]
 
@@ -341,12 +346,12 @@ class CrystalMap:
         self._row = indices[-1] if dims > 1 else None
         self._column = indices[0]
 
-        self._dz = spacing[-2] if dims > 2 else 0
-        self._dy = spacing[-1] if dims > 1 else 0
+        self._dz = spacing[-2] if dims > 2 else None
+        self._dy = spacing[-1] if dims > 1 else None
         self._dx = spacing[0]
 
-        self._zmin = origin[-2] if dims > 2 else 0
-        self._ymin = origin[-1] if dims > 1 else 0
+        self._zmin = origin[-2] if dims > 2 else None
+        self._ymin = origin[-1] if dims > 1 else None
         self._xmin = origin[0]
 
         return
@@ -357,18 +362,18 @@ class CrystalMap:
 
         # Reminder: Default numpy convention implies zyx (layer/row/column) ordering.
         if y is None and z is not None:
-            ValueError("y cannot be None if z is not None")
+            raise ValueError("y cannot be None if z is not None")
         if x is None and y is not None:
-            ValueError("x cannot be None if y is not None")
+            raise ValueError("x cannot be None if y is not None")
         if x is None and z is not None:
-            ValueError("x cannot be None if z is not None")
+            raise ValueError("x cannot be None if z is not None")
 
         if z is None:
-            dz = 0
-            zmin = 0
+            dz = None
+            zmin = None
             layer = None
         elif not np.issubdtype(z.dtype, np.number):
-            ValueError("z must be interpretable as a 1d array of floats or ints")
+            raise ValueError("z must be interpretable as a 1d array of floats or ints")
         else:
             z = np.atleast_1d(z).flatten()
             dz = _step_size_from_coordinates(z)
@@ -376,11 +381,11 @@ class CrystalMap:
             layer = np.around((z - zmin) / dz, 0).astype(int)
 
         if y is None:
-            dy = 0
-            ymin = 0
+            dy = None
+            ymin = None
             row = None
         elif not np.issubdtype(y.dtype, np.number):
-            ValueError("y must be interpretable as a 1d array of floats or ints")
+            raise ValueError("y must be interpretable as a 1d array of floats or ints")
         else:
             y = np.atleast_1d(y).flatten()
             dy = _step_size_from_coordinates(y)
@@ -390,7 +395,7 @@ class CrystalMap:
         if x is None:
             x = np.arange(self._rotations.shape[0], dtype=int)
         elif not np.issubdtype(x.dtype, np.number):
-            ValueError("x must be interpretable as a 1d array of floats or ints")
+            raise ValueError("x must be interpretable as a 1d array of floats or ints")
         x = np.atleast_1d(x).flatten()
         dx = _step_size_from_coordinates(x)
         xmin = np.min(x)
@@ -421,9 +426,9 @@ class CrystalMap:
         """set a unique integer ID for each voxel in the CrstalMap."""
         id_array = np.atleast_1d(id_array).flatten().astype(int)
         if id_array.size != self.size:
-            ValueError("IDs must be same the same size as the CrystalMap")
+            raise ValueError("IDs must be same the same size as the CrystalMap")
         if np.max(np.unique(id_array, return_counts=True)[1]) != 1:
-            ValueError(
+            raise ValueError(
                 "IDs must be an array of unique of integers. If attempting to assign "
                 + "feature ids or property data, consider using CrystalMap.prop."
             )
@@ -448,7 +453,7 @@ class CrystalMap:
         nx = None if self.column is None else np.max(self.column) - np.min(self.column)
         ny = None if self.row is None else np.max(self.row) - np.min(self.row)
         nz = None if self.layer is None else np.max(self.layer) - np.min(self.layer)
-        if self._indexing_order == "xyz":
+        if self.indexing_order == "xyz":
             all_n = [nx, ny, nz]
         else:
             all_n = [nz, ny, nx]
@@ -535,10 +540,10 @@ class CrystalMap:
     @dx.setter
     def dx(self, dx: float | int):
         if self.column is None:
-            ValueError("dx cannot be set when column is None")
+            raise ValueError("dx cannot be set when column is None")
         dx = np.asanyarray(dx).flatten()[0]
         if not np.isin(type(dx), np.number):
-            ValueError("dx must be interpretable as an int or float")
+            raise ValueError("dx must be interpretable as an int or float")
         self._dx = dx
 
     @property
@@ -549,10 +554,10 @@ class CrystalMap:
     @dy.setter
     def dy(self, dy: float | int):
         if self.row is None:
-            ValueError("dy cannot be set when row is None")
+            raise ValueError("dy cannot be set when row is None")
         dy = np.asanyarray(dy).flatten()[0]
         if not np.isin(type(dy), np.number):
-            ValueError("dy must be interpretable as an int or float")
+            raise ValueError("dy must be interpretable as an int or float")
         self._dy = dy
 
     @property
@@ -563,18 +568,62 @@ class CrystalMap:
     @dz.setter
     def dz(self, dz: float | int):
         if self.layer is None:
-            ValueError("dz cannot be set when row is None")
+            raise ValueError("dz cannot be set when row is None")
         dz = np.asanyarray(dz).flatten()[0]
         if not np.isin(type(dz), np.number):
-            ValueError("dz must be interpretable as an int or float")
+            raise ValueError("dz must be interpretable as an int or float")
         self._dz = dz
+
+    @property
+    def origin(self):
+        """Either get or set the spatial coordinates of the origin (0,0,0)"""
+        origin = [self._zmin, self._ymin, self._xmin]
+        origin = np.array([x for x in origin if x is not None])
+        if self.indexing_order == "xyz":
+            return origin[::-1]
+        return origin
+
+    @origin.setter
+    def origin(self, value: np.ndarray):
+        value = np.asanyarray(value).flatten()
+        if value.size != self.ndims:
+            raise ValueError("Origin must be a numpy array with a size of self.ndims")
+        self._zmin = value[-2] if self.ndims > 2 else 0
+        self._ymin = value[-1] if self.ndims > 1 else 0
+        self._xmin = value[0]
+
+    @property
+    def indexing_order(self):
+        """Get or set the indexing order to either the default 'zyx', or 'xyz'.
+
+        'zyx' (default)  is row-major ordering and works intuitively with
+        numpy functions like mesgrid, flatten, etc.
+
+        'xyz' is column-major ordering, which is used in matplotlib,
+        fortran, and Matlab.
+
+        Note
+        ----
+        This optional setting does not effect how the data in a CrystalMap is
+        stored, which is as 'layer', 'row', and 'column' integer arrays.
+        """
+        return self._indexing_order
+
+    @indexing_order.setter
+    def indexing_order(self, value: str):
+        value = value.lower()
+        if np.isin(value, ["xyz", "zyx"]):
+            self._indexing_order = value
+        else:
+            raise ValueError(f"'indexing_order' must be 'xyz' or'zyx', not {value}.")
 
     @property
     def steps(self):
         """Returns the all defined step sizes as a dictionary"""
-        keys = ["dz", "dy", "dx"]
-        vals = self.dz, self.dy, self.dx
-        return {aa: bb for aa, bb in zip(keys, vals) if bb is not None}
+        steps = [val for val in [self.dz, self.dy, self.dx] if val is not None]
+        if self.indexing_order == "xyz":
+            return steps[::-1]
+        return steps
 
     @property
     def column(self) -> np.ndarray | None:
@@ -599,7 +648,7 @@ class CrystalMap:
     def col(self, value: np.ndarray):
         value = np.asanyarray(value).flatten().astype(int)
         if value.size != self.size:
-            ValueError("input must be the same size as the CrystalMap.")
+            raise ValueError("input must be the same size as the CrystalMap.")
         self._column = value
 
     @property
@@ -613,7 +662,7 @@ class CrystalMap:
     def row(self, value: np.ndarray):
         value = np.asanyarray(value).flatten().astype(int)
         if value.size != self.size:
-            ValueError("input must be the same size as the CrystalMap.")
+            raise ValueError("input must be the same size as the CrystalMap.")
         self._row = value
 
     @property
@@ -627,7 +676,7 @@ class CrystalMap:
     def layer(self, value: np.ndarray):
         value = np.asanyarray(value).flatten().astype(int)
         if value.size != self.size:
-            ValueError("input must be the same size as the CrystalMap.")
+            raise ValueError("input must be the same size as the CrystalMap.")
         self._layer = value
 
     @property
@@ -660,9 +709,11 @@ class CrystalMap:
     def phase_id(self, values: np.ndarray | int) -> None:
         values = np.atleast_1d(values).flatten().astype(int)
         if values.size != self.size:
-            ValueError("phase_id array must be same the same size as the CrystalMap")
+            raise ValueError(
+                "phase_id array must be same the same size as the CrystalMap"
+            )
         if np.min(values) < -1:
-            ValueError(
+            raise ValueError(
                 "All values in phase_ids must be zero or higher for"
                 + "indexed voxels, or -1 for unindexed voxels."
             )
@@ -759,9 +810,11 @@ class CrystalMap:
     @rotations.setter
     def rotations(self, rots):
         if not isinstance(rots, Rotation):
-            ValueError("rotations must be a orix.quaternion.Rotation object.")
+            raise ValueError("rotations must be a orix.quaternion.Rotation object.")
         if rots.shape != self.rotations.shape:
-            ValueError(f"rotations shape {rots.shape} did not match existing shape.")
+            raise ValueError(
+                f"rotations shape {rots.shape} did not match existing shape."
+            )
         self._rotations.data = rots.data  # auto_normalizes quaternions.
 
     @property
@@ -947,26 +1000,31 @@ class CrystalMap:
 
         # Case 4: key is interpretable as a form of numpy-like slicing.
         if np.all(isinstance(x, (slice, int)) for x in key):
-            data_to_keep = np.ones(self.size, dtype=bool)
-            slices = [slice(None, None, None)] * self.ndim
-            for i, k in enumerate(key):
-                slices[i] = k
-            if self._indexing_order == "xyz":
-                slices = slices[::-1]
-            for axis, choice in zip((self.layer, self.row, self.col), slices):
-                if isinstance(choice, int):
-                    data_to_keep[axis != choice] = False
-                else:
-                    if choice.stop is not None:
-                        data_to_keep[axis > choice.stop] = False
-                    if choice.start is not None:
-                        data_to_keep[axis <= choice.start] = False
-                        axis = axis - choice.start
-                    if choice.step is not None:
-                        data_to_keep[axis % choice.start != 0] = False
+            grid_mask = np.zeros(self.shape, dtype=bool)
+            grid_mask[key] = True
+            data_to_keep = grid_mask[*self.indices.T]
+            # data_to_keep = np.ones(self.size, dtype=bool)
+            # slices = ["skip", "skip", "skip"]
+            # if self.indexing_order == "xyz":
+            #     key = key[::-1]
+            # for i, k in enumerate(key):
+            #     slices[3 - len(key) + i] = k
+            # for axis, choice in zip((self.layer, self.row, self.col), slices):
+            #     if choice is "skip":
+            #         continue
+            #     if isinstance(choice, int):
+            #         data_to_keep[axis != choice] = False
+            #     else:
+            #         if choice.stop is not None:
+            #             data_to_keep[axis > choice.stop] = False
+            #         if choice.start is not None:
+            #             data_to_keep[axis <= choice.start] = False
+            #             axis = axis - choice.start
+            #         if choice.step is not None:
+            #             data_to_keep[axis % choice.start != 0] = False
 
         if data_to_keep is None:
-            ValueError(
+            raise ValueError(
                 "`key` could not be interpreted as a phase name, boolean"
                 + " mask, indices, and/or slices."
             )
@@ -981,9 +1039,8 @@ class CrystalMap:
                 ind_list = [new_layer, new_row, new_col]
             del new_layer, new_row, new_col
             new_indices = np.stack([x for x in ind_list if x is not None], axis=0)
-            ind_min = np.min(new_indices, axis=0)
-            new_indices -= ind_min
 
+            ind_min = np.min(new_indices, axis=1)
             new_origin = self.origin - (ind_min * self.steps)
             new_r = self.rotations[data_to_keep]
             new_phase_id = self.phase_id[data_to_keep]
@@ -992,7 +1049,7 @@ class CrystalMap:
             new_xmap = CrystalMap(
                 rotations=new_r,
                 phase_id=new_phase_id,
-                phase_list=self.phase_list,
+                phase_list=self.phases,
                 prop=new_prop,
                 scan_unit=self.scan_unit,
                 indices=new_indices,
@@ -1000,6 +1057,10 @@ class CrystalMap:
                 origin=new_origin,
                 indexing_order=self.indexing_order,
             )
+
+            # copy original grid shape (useful for plotting.)
+            new_xmap._orig_shape = copy.deepcopy(self.shape)
+
             return new_xmap
 
     def __repr__(self) -> str:
@@ -1106,7 +1167,7 @@ class CrystalMap:
         self,
         item: str | np.ndarray,
         decimals: int | None = None,
-        fill_value: int | float | None = np.nan,
+        fill_value: int | float | None = None,
     ) -> np.ndarray:
         """Return an array of a class instance attribute, with values
         equal to ``False`` in :attr:`self.is_in_data` set to
@@ -1161,78 +1222,19 @@ class CrystalMap:
         >>> iq.shape
         (100, 117)
         """
-        # Get full map shape
-        map_shape = self._original_shape
 
-        # Declare array of correct shape, accounting for RGB
-        # TODO: Better account for `item.shape`, e.g. quaternions
-        #  (item.shape[-1] == 4) in a more general way than here (not
-        #  more if/else)!
-        map_size = np.prod(map_shape)
-        if isinstance(item, np.ndarray):
-            array = np.empty(map_size, dtype=item.dtype)
-            if item.shape[-1] == 3 and map_size > 3:  # Assume RGB
-                map_shape += (3,)
-                array = np.column_stack((array,) * 3)
-        elif item in ["orientations", "rotations"]:  # Definitely RGB
-            array = np.empty(map_size, dtype=np.float64)
-            map_shape += (3,)
-            array = np.column_stack((array,) * 3)
+        data = self.__getattr__(item)
+        array_shape = self._orig_shape + data.shape[1:]
+        mask = np.zeros(array_shape, dtype=bool)
+        array = np.zeros(array_shape, dtype=data.dtype)
+        if self.indexing_order == "xyz":
+            array[self.col, self.row, self.layer] = data
         else:
-            array = np.empty(map_size, dtype=np.float64)
-
-        # Enter non-masked values into array
-        if isinstance(item, np.ndarray):
-            # TODO: Account for 2D map with more than one value per point
-            array[self.is_in_data] = item
-        elif item in ["orientations", "rotations"]:
-            if item == "rotations":
-                # Use only the top matching rotation per point
-                if self.rotations_per_point > 1:
-                    rotations = self.rotations[:, 0]
-                else:
-                    rotations = self.rotations
-                array[self.is_in_data] = rotations.to_euler()
-            else:  # item == "orientations"
-                # Fill in orientations per phase
-                for i, _ in self.phases_in_data:
-                    phase_mask = (self._phase_id == i) * self.is_in_data
-                    phase_mask_in_data = self.phase_id == i
-                    array[phase_mask] = self[phase_mask_in_data].orientations.to_euler()
-        else:  # String
-            data = self.__getattr__(item)
-            if data is None:
-                raise ValueError(f"{item} is {data}.")
-            else:
-                # TODO: Account for 2D map with more than one value per point
-                array[self.is_in_data] = data
-                array = array.astype(data.dtype)
-
-        # Slice and reshape array
-        slices = self._data_slices_from_coordinates()
-        reshaped_array = array.reshape(map_shape)
-        sliced_array = reshaped_array[slices]
-
-        # Reshape and slice mask with points not in data
-        if array.shape[-1] == 3 and map_size > 3:  # RGB
-            not_in_data = np.dstack((~self.is_in_data,) * 3)
-        else:  # Scalar
-            not_in_data = ~self.is_in_data
-        not_in_data = not_in_data.reshape(map_shape)[slices]
-
-        # Fill points not in data with the fill value
-        if not_in_data.any():
-            if fill_value is None or fill_value is np.nan:
-                sliced_array = sliced_array.astype(np.float64)
-            sliced_array[not_in_data] = fill_value
-
-        # Round values
+            array[self.layer, self.row, self.col] = data
         if decimals is not None:
-            output_array = np.round(sliced_array, decimals=decimals)
-        else:  # np.issubdtype(array.dtype, np.bool_):
-            output_array = sliced_array
-
-        return output_array
+            array = np.around(array, decimals)
+        masked_array = np.ma.masked_array(array, mask, fill_value=fill_value)
+        return masked_array
 
     def plot(
         self,
