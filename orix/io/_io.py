@@ -31,7 +31,13 @@ from orix.io.plugins import plugin_list
 from orix.io.plugins._h5ebsd import hdf5group2dict
 from orix.quaternion.rotation import Rotation
 
-extensions = [plugin.file_extensions for plugin in plugin_list if plugin.writes]
+writable_extensions = [
+    x
+    for xx in [
+        plugin.file_extensions for plugin in plugin_list if plugin.writes
+    ]
+    for x in xx
+]
 
 
 # TODO: Remove after 0.13.0
@@ -76,14 +82,15 @@ def loadctf(file_string: str) -> Rotation:
     return Rotation.from_euler(euler)
 
 
-def load(filename: str | Path, **kwargs) -> CrystalMap:
+def load(filename: str | Path | None = None, **kwargs) -> CrystalMap:
     """Load data from a supported file format listed in
     :doc:`orix.io.plugins`.
 
     Parameters
     ----------
     filename
-        Name of file to load.
+        Name of file to load. If None, a message is instead returned
+        containing the supported file formats.
     **kwargs
         Keyword arguments passed to the corresponding plugins'
         ``file_reader()``. See their individual docstrings for available
@@ -94,6 +101,17 @@ def load(filename: str | Path, **kwargs) -> CrystalMap:
     data
         Crystal map read from the file.
     """
+    if filename is None:
+        txt = "No filename given. Supported formats and extensions are:"
+        for plugin in plugin_list:
+            name = plugin.format_name
+            ext = ", ".join(plugin.file_extensions)
+            txt += f"\n  - {name}: ({ext})"
+        txt += "\n For formats with identical extensions, part of the"
+        txt += "file is initially read to determine the correct format"
+        print(txt)
+        return
+
     if not os.path.isfile(filename):
         raise IOError(f"No filename matches '{filename}'.")
 
@@ -157,8 +175,8 @@ def _plugin_from_manufacturer(
 
 
 def save(
-    filename: str | Path,
-    object2write: CrystalMap,
+    filename: str | Path | None = None,
+    object2write: CrystalMap | None = None,
     overwrite: bool | None = None,
     **kwargs,
 ) -> None:
@@ -168,7 +186,8 @@ def save(
     Parameters
     ----------
     filename
-        Name of file to write to.
+        Name of file to write to. If None, a message is instead
+        returned containing the supported file formats.
     object2write
         Object to write to file.
     overwrite
@@ -179,8 +198,11 @@ def save(
         ``file_writer()``. See their individual docstrings for available
         arguments.
     """
-    ext = os.path.splitext(filename)[1][1:]
+    if filename is None:
+        print(f"Supported file extensions are: '{writable_extensions}'.")
+        return
 
+    ext = os.path.splitext(filename)[1][1:]
     writer = None
     for p in plugin_list:
         if (
@@ -194,7 +216,7 @@ def save(
     if writer is None:
         raise IOError(
             f"'{ext}' does not correspond to any supported format. Supported "
-            f"file extensions are: '{extensions}'."
+            f"file extensions are: '{writable_extensions}'."
         )
     else:
         is_file = os.path.isfile(filename)
@@ -205,7 +227,9 @@ def save(
         elif overwrite is False and is_file:
             write = False
         else:
-            raise ValueError("`overwrite` parameter can only be None, True or False.")
+            raise ValueError(
+                "`overwrite` parameter can only be None, True or False."
+            )
 
     if write:
         writer.file_writer(filename, object2write, **kwargs)

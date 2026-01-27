@@ -18,35 +18,61 @@
 #
 
 """
-======================
-Select and modify data
-======================
+=====================
+Plotting Crystal Maps
+=====================
 
-This example shows how to select data in a :class:`~orix.crystal_map.CrystalMap`, obtain
-a new map from parts of the data and modify data inplace.
+This example gives a basic overview on how to plot CrystalMap objects
+in ORIX.
 
-There are five ways to select data:
-    1. NumPy slice(s)
-    2. By one or more indices
-    3. Per phase(s)
-    4. Points considered "indexed"/"not_indexed"
-    5. Boolean indexing
+The Orientation data and other properties used in this example were
+aquired from a super-duplex stainless steel (SDSS) EBSD dataset provided
+courtesy of Prof. Jarle Hjelen from the Norwegian University of Science
+and Technology, and carries a CC BY 4.0 License.
 """
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from orix.crystal_map import CrystalMap, Phase
-from orix.plot import register_projections
+import orix.crystal_map as ocm
+import orix.plot as opl
+import orix.data as oda
+import orix.quaternion as oqu
+import orix.vector as ove
 
-register_projections()  # Register our custom Matplotlib projections
+opl.register_projections()  # Register our custom Matplotlib projections
+
+###############################################################################
+# This example will use one of the default ORIX datasets from the data module.
+# For details on how to load in your own datasets or create one from scrach,
+# refer to the :ref:`crystal_maps/initializing_crystal_maps.py` example.
+
+xmap = oda.sdss_ferrite_austenite(allow_download=True)
+xmap
+
+###############################################################################
+# Simple plots can be made using :meth:`~orix.crystal_map.CrystalMap.plot` function.
+# By default, plots will give only display the phases.
+xmap.plot()
+
+###############################################################################
+# If there is either an external array or CrystalMap property representing a
+# per-pixel scalar, this can be used to modify the plots as well with the
+# `overlay` functionality.
+
+xmap.plot(overlay="iq")  # Use the `Image Quality` saved in xmap.prop.
+# Relative distance from the center
+dist = (((xmap.x - 87) ** 2) + ((xmap.y - 74) ** 2)) ** 0.5
+xmap.plot(overlay=-dist)
 
 
-def plot_id(xmaps: CrystalMap | list[CrystalMap], titles: str | list[str]) -> None:
+def plot_id(
+    xmaps: ocm.CrystalMap | list[ocm.CrystalMap], titles: str | list[str]
+) -> None:
     """Convenience function to plot at most four crystal maps showing
     rows, columns and IDs of each map point.
     """
-    if isinstance(xmaps, CrystalMap):
+    if isinstance(xmaps, ocm.CrystalMap):
         xmaps = [xmaps]
         titles = [titles]
     n_xmaps = len(xmaps)
@@ -77,7 +103,7 @@ def plot_id(xmaps: CrystalMap | list[CrystalMap], titles: str | list[str]) -> No
 # having one phase and an identity rotation, and plot the row and column coordinates as
 # well as the map ID of each point into the originally created map
 
-xmap = CrystalMap.empty(shape=(5, 10))
+xmap = ocm.CrystalMap.empty(shape=(5, 10))
 xmap.phases[0].name = "a"
 print(xmap)
 
@@ -99,7 +125,7 @@ print(xmap2[:, 1].id)
 # Select data based on phase(s) (3) after adding a new phase to the phase list and
 # giving some points in the data the new phase ID by modifying the phase IDs inplace
 
-xmap.phases.add(Phase("b"))
+xmap.phases.add(ocm.Phase("b"))
 
 xmap[1, 1].phase_id = 1
 xmap[1:4, 5:9].phase_id = 1
