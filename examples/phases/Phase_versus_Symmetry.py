@@ -23,14 +23,13 @@ Phase versus Symmetry
 =====================
 """
 
-import matplotlib.pyplt as plt
+import diffpy.structure as dps
+
 import numpy as np
 
 import orix.crystal_map as ocm
 import orix.quaternion as oqu
-import orix.plot as opl
-
-opl.register_projections()
+import orix.vector as ove
 
 # %%
 # Symmetry versus Phase
@@ -42,59 +41,47 @@ opl.register_projections()
 #
 # A Symmetry object contains ONLY information on symmetrically equivalent transforms,
 # and in most cases is a Laue and/or Point group. For example, the Symmetry of
-# ruby would be defined as:
+# Alumina would be defined as:
 
-ruby_sym = oqu.symmetry.D3d  # <-- Schoenflies notation for point group '-3m'
-ruby_sym.plot()
-ruby_sym
+Al2O3_sym = oqu.symmetry.D3d  # <-- Schoenflies notation for point group '-3m'
+Al2O3_sym.plot()
+Al2O3_sym
 
 ##############################################################################
 # On the other hand, a Phase object contains at minimum both the symmetry and
-# the unit cell.
+# the unit cell. Again, using Alumina as the example:
 
-ruby_phase = ocm.Phase(
-    point_group=ruby_sym,
-    cell_parameters=[0.476, 0.476, 1.298, 90, 90, 120],
-)
+atoms = [
+    dps.Atom("Al",[1/3,2/3,0.815]),
+         dps.Atom("O",[0.361,1/3,0.583]),
+         ]
+lattice = dps.Lattice(0.481, 0.481, 1.391, 90, 90, 120)
+structure = dps.Structure(atoms=atoms, lattice=lattice)
+Al2O3_phase = ocm.Phase(name = "Alumina",
+    space_group = 167,
+    structure = structure,
+    color = 'red',
+).expand_asymmetric_unit()
 
-ax = plt.figure().add_subplot(projection="3d")
-ax.set_aspect("equal")
-ax.set_proj_type = "ortho"
-v = np.array([[x, y, z] for x in [1, 0] for y in [1, 0] for z in [0, 1]]).dot(
-    ruby_phase._diffpy_lattice
-)
-e = [
-    [0, 1],
-    [1, 3],
-    [3, 2],
-    [2, 0],
-    [0, 4],
-    [4, 5],
-    [5, 1],
-    [5, 7],
-    [7, 6],
-    [6, 4],
-    [6, 2],
-    [3, 7],
-]
-ax.plot([0, 0], [0, 0], [0, 1], "k")
-ax.plot([0, 0], [0, 1], [0, 0], "k")
-ax.plot([0, 1], [0, 0], [0, 0], "k")
-ax.text(1, 0, 0, "X")
-ax.text(0, 1, 0, "Y")
-ax.text(0, 0, 1, "Z")
-ax.text(*v[2], "<100>")
-ax.text(*v[4], "<010>")
-ax.text(*v[7], "<001>")
-ax.scatter(*v.T, color="r")
-for edge in e:
-    ax.plot(*np.stack([v[edge[0]], v[edge[1]]]).T, color="red")
-ax.set_title("Unit cell for ruby ")
-plt.tight_layout()
+unit_cell_figure = Al2O3_phase.plot_unit_cell(return_figure=True)
+unit_cell_figure.suptitle(r"$Al_2O_3$ unit cell")
+Al2O3_phase
 
 ##############################################################################
-# This distinction is important because quaternion-based transforms only
-# require defining a symmtry, whereas any calculations involving Miller indices
-# or diffraction require defining a Phase.
+# Quaternion based transforms (orientation transforms, misorientation calculations,
+# etc.) only require a Symmetry, whereas any calculation involving diffraction,
+# distance calculations, Inverse Pole Figures, and/or Miller indicies require
+# a Phase.
+#
+# Additionally, while it IS possible to define a phase without explicitly giving
+# the cell parameters, this will cause ORIX to fill in default values for cell
+# parameters based on the point group. This is simpler and has no effect on IPF
+# coloring or orientation calculations (hence why it is allowed), but it WILL cause
+# incorrect Miller calculations and IPF plotting.
 
-# TODO: flesh out with basic miller example, plus miller mistakes from lazy defintions
+lazy_Al2O3_phase = ocm.Phase(space_group=167)
+correct_111 = ove.Miller(uvw=[1,1,1],phase=lazy_Al2O3_phase).xyz
+incorrect_111 = ove.Miller(uvw=[1,1,1],phase=Al2O3_phase).xyz
+print("Correct xyz for [111]:", np.stack(correct_111).flatten())
+print("Incorrect xyz for [111]:", np.stack(incorrect_111).flatten())
+
