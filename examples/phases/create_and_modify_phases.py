@@ -18,22 +18,53 @@
 #
 
 r"""
-====================
-Create crystal phase
-====================
+===============================================
+Create and Modify Crystal Phases and PhaseLists
+===============================================
 
 This example shows various ways to create a crystal :class:`~orix.crystal_map.Phase`.
 
-For alignment of the crystal axes with a Cartesian coordinate system, see the example on
-:doc:`/examples/crystal_phase/crystal_reference_frame`.
+For alignment of the crystal axes with a Cartesian coordinate system, see the
+example on :doc:`/examples/crystal_phase/crystal_reference_frame`.
 """
 
 from diffpy.structure import Atom, Lattice, Structure
 
-from orix.crystal_map import Phase
+import orix.crystal_map as ocm
+
+##############################################################################
+# A Phase object, at minimum, contains the crystallographic symmetry of a phase
+# and it's unit cell. for more information on how this class is different than
+# :class:`~orix.quaternion.Symmetry`, see :doc:`/examples/phases/phase_versus_symmetry`
+#
+# Internally, orix uses diffpy.structure for all unit cell calculations. Diffpy
+# works by defining a Lattice plus one or more Atoms within a Structure. For
+# users interested more granular control, diffpy.structure can be used to directly
+# define a phase:
+
+ferrite_structure = Structure(
+    title="ferrite",
+    # a, b, c, alpha, beta, and gamma in nm and degrees for ferrite
+    lattice=Lattice(0.287, 0.287, 0.287, 90, 90, 90),
+    atoms=[Atom("Fe", [0, 0, 0])],
+)
+ferrite_phase = ocm.Phase(point_group="m3m", structure=ferrite_structure)
+ferrite_phase
+##############################################################################
+# However, for users not interested in atomic positions, a Phase can also be
+# set using the (a,b,c, alpha, beta, gamma) cell parameters without needing to
+# import and define diffpy objects. The (a,b,c) cell dimensions are given in nanometers,
+# and the (alpha, beta, gamma) angles in degrees.
+
+austenite_phase = ocm.Phase(
+    name="Austenite",
+    point_group="m3m",
+    cell_parameters=[0.36, 0.36, 0.36, 90, 90, 90],
+)
+austenite_phase
 
 ########################################################################################
-# From a Crystallographic Information File (CIF) file.
+# Phases can also be imported directly from a Crystallographic Information File (CIF) file.
 #
 # E.g. one for titanium from an online repository like the Americam Mineralogist
 # Crystal Structure Database:
@@ -43,18 +74,18 @@ from orix.crystal_map import Phase
 
 ########################################################################################
 # From a space group (note that the point group is derived)
-phase_m3m = Phase(space_group=225)
+phase_m3m = ocm.Phase(space_group=225)
 print(phase_m3m)
 
 ########################################################################################
 # From a point group (note that the space group is unknown since there are multiple
 # options)
-phase_432 = Phase(point_group="432")
+phase_432 = ocm.Phase(point_group="432")
 print(phase_432)
 
 ########################################################################################
 # Non-crystalline phase
-phase_non = Phase()
+phase_non = ocm.Phase()
 print(phase_non)
 
 ########################################################################################
@@ -66,6 +97,6 @@ structure_ti = Structure(
 print(structure_ti)
 
 ########################################################################################
-phase_ti = Phase(space_group=191, structure=structure_ti)
+phase_ti = ocm.Phase(space_group=191, structure=structure_ti)
 print(phase_ti)
 print(phase_ti.structure)

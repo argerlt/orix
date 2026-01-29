@@ -73,6 +73,11 @@ class Phase:
         Unit cell with atoms and a lattice. If not given, a default
         :class:`~diffpy.structure.structure.Structure` compatible with
         the symmetry is used.
+    cell_parameters
+        the six cell parameters used to define a unit cell. These are
+        a, b, and c in nanometers, and alpha, beta, gamma in degrees.
+        Values are passed directly into diffpy.structure.Lattice. This
+        value is ignored if structure is not None.
     color
         Phase color. If not given, it is set to the first default
         Matplotlib color "tab:blue".
@@ -84,6 +89,7 @@ class Phase:
         space_group: int | SpaceGroup | None = None,
         point_group: int | str | Symmetry | None = None,
         structure: Structure | None = None,
+        cell_parameters: list | None = None,
         color: str | None = None,
     ) -> None:
         if isinstance(name, Phase):
@@ -98,12 +104,13 @@ class Phase:
 
         self.space_group = space_group  # Needs to be set before point group
         self.point_group = point_group
-
         self.color = color if color is not None else "tab:blue"
 
         if structure is None:
             pg = self.point_group
-            if pg is not None and pg.system is not None:
+            if cell_parameters is not None:
+                lat = Lattice(*cell_parameters)
+            elif pg is not None and pg.system is not None:
                 lat = default_lattice(pg.system)
             else:
                 lat = Lattice()
@@ -138,7 +145,9 @@ class Phase:
 
         # Ensure correct alignment
         old_matrix = value.lattice.base
-        new_matrix = new_structure_matrix_from_alignment(old_matrix, x="a", z="c*")
+        new_matrix = new_structure_matrix_from_alignment(
+            old_matrix, x="a", z="c*"
+        )
         new_value = value.copy()
 
         # Ensure atom positions are expressed in the new basis
@@ -412,8 +421,9 @@ class Phase:
                 new_atom.xyz = pos
                 # Only add new atom if not already present
                 for present_atom in diffpy_structure:
-                    if present_atom.element == new_atom.element and np.allclose(
-                        present_atom.xyz, new_atom.xyz
+                    if (
+                        present_atom.element == new_atom.element
+                        and np.allclose(present_atom.xyz, new_atom.xyz)
                     ):
                         break
                 else:
@@ -486,7 +496,13 @@ def new_structure_matrix_from_alignment(
 
 
 def default_lattice(system: VALID_SYSTEMS) -> Lattice:
-    if system in ["triclinic", "monoclinic", "orthorhombic", "tetragonal", "cubic"]:
+    if system in [
+        "triclinic",
+        "monoclinic",
+        "orthorhombic",
+        "tetragonal",
+        "cubic",
+    ]:
         lat = Lattice()
     elif system in ["trigonal", "hexagonal"]:
         lat = Lattice(1, 1, 1, 90, 90, 120)

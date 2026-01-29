@@ -17,7 +17,7 @@
 # along with orix. If not, see <http://www.gnu.org/licenses/>.
 #
 
-"""
+r"""
 =====================
 Plotting Crystal Maps
 =====================
