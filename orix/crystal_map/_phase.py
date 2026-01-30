@@ -95,11 +95,11 @@ class Phase:
         if isinstance(name, Phase):
             return Phase.__init__(
                 self,
-                name.name,
-                name.space_group,
-                name.point_group,
-                name.structure.copy(),
-                name.color,
+                name=name.name,
+                space_group=name.space_group,
+                point_group=name.point_group,
+                structure=name.structure.copy(),
+                color=name.color,
             )
 
         self.space_group = space_group  # Needs to be set before point group

@@ -31,10 +31,9 @@ import orix.crystal_map as ocm
 import orix.quaternion as oqu
 import orix.vector as ove
 
-# %%
-# Symmetry versus Phase
-# ---------------------
-#
+from orix.quaternion import symmetry
+
+##############################################################################
 # ORIX includes two different but related classes for describing crystallographic
 # information, :class:`~orix.quaternion.symmetry.Symmetry`, and
 # :class:`~orix.crystal_map.Phase`.
@@ -43,9 +42,9 @@ import orix.vector as ove
 # and in most cases is a Laue and/or Point group. For example, the Symmetry of
 # Alumina would be defined as:
 
-Al2O3_sym = oqu.symmetry.D3d  # <-- Schoenflies notation for point group '-3m'
+Al2O3_sym = symmetry.D3d  # <-- Schoenflies notation for point group '-3m'
 Al2O3_sym.plot()
-Al2O3_sym
+print(Al2O3_sym)
 
 ##############################################################################
 # On the other hand, a Phase object contains at minimum both the symmetry and
@@ -75,13 +74,14 @@ Al2O3_phase
 #
 # Additionally, while it IS possible to define a phase without explicitly giving
 # the cell parameters, this will cause ORIX to fill in default values for cell
-# parameters based on the point group. This is simpler and has no effect on IPF
-# coloring or orientation calculations (hence why it is allowed), but it WILL cause
-# incorrect Miller calculations and IPF plotting.
+# parameters based on the point group. This is simpler, has no effect on IPF coloring
+# or orientation calculations, and allows for tracking information such as names and
+# preferred plot color(hence why it is allowed), but it WILL cause incorrect Miller 
+# calculations and IPF plotting.
 
 lazy_Al2O3_phase = ocm.Phase(space_group=167)
-correct_111 = ove.Miller(uvw=[1,1,1],phase=lazy_Al2O3_phase).xyz
-incorrect_111 = ove.Miller(uvw=[1,1,1],phase=Al2O3_phase).xyz
+correct_111 = ove.Miller(uvw=[1,1,1],phase=Al2O3_phase).xyz
+incorrect_111 = ove.Miller(uvw=[1,1,1],phase=lazy_Al2O3_phase).xyz
 print("Correct xyz for [111]:", np.stack(correct_111).flatten())
 print("Incorrect xyz for [111]:", np.stack(incorrect_111).flatten())
 

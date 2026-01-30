@@ -28,42 +28,46 @@ For alignment of the crystal axes with a Cartesian coordinate system, see the
 example on :doc:`/examples/crystal_phase/crystal_reference_frame`.
 """
 
-from diffpy.structure import Atom, Lattice, Structure
-
+import diffpy.structure as dps
 import orix.crystal_map as ocm
 
 ##############################################################################
 # A Phase object, at minimum, contains the crystallographic symmetry of a phase
 # and it's unit cell. for more information on how this class is different than
-# :class:`~orix.quaternion.Symmetry`, see :doc:`/examples/phases/phase_versus_symmetry`
+# :class:`~orix.quaternion.Symmetry`, see :doc:`/examples/phases/Phase_versus_Symmetry`
 #
 # Internally, orix uses diffpy.structure for all unit cell calculations. Diffpy
 # works by defining a Lattice plus one or more Atoms within a Structure. For
-# users interested more granular control, diffpy.structure can be used to directly
-# define a phase:
+# users interested more granular control, diffpy.structure can be used to define a
+# phase as follows.
 
-ferrite_structure = Structure(
+ferrite_structure = dps.Structure(
     title="ferrite",
     # a, b, c, alpha, beta, and gamma in nm and degrees for ferrite
-    lattice=Lattice(0.287, 0.287, 0.287, 90, 90, 90),
-    atoms=[Atom("Fe", [0, 0, 0])],
+    lattice=dps.Lattice(0.287, 0.287, 0.287, 90, 90, 90),
+    atoms=[dps.Atom("Fe", [1e-5, 1e-5, 1e-5])],
 )
-ferrite_phase = ocm.Phase(point_group="m3m", structure=ferrite_structure)
-ferrite_phase
+ferrite_phase = ocm.Phase(
+    space_group=229, structure=ferrite_structure, color="black"
+).expand_asymmetric_unit()
+print(ferrite_phase)
+ferrite_phase.plot_unit_cell()
+
 ##############################################################################
 # However, for users not interested in atomic positions, a Phase can also be
 # set using the (a,b,c, alpha, beta, gamma) cell parameters without needing to
-# import and define diffpy objects. The (a,b,c) cell dimensions are given in nanometers,
-# and the (alpha, beta, gamma) angles in degrees.
+# import and define diffpy objects. Note that like diffpy, the (alpha, beta, gamma)
+# angles are in degrees.
 
 austenite_phase = ocm.Phase(
     name="Austenite",
     point_group="m3m",
     cell_parameters=[0.36, 0.36, 0.36, 90, 90, 90],
 )
-austenite_phase
+print(austenite_phase)
+austenite_phase.plot_unit_cell()
 
-########################################################################################
+##############################################################################
 # Phases can also be imported directly from a Crystallographic Information File (CIF) file.
 #
 # E.g. one for titanium from an online repository like the Americam Mineralogist
@@ -72,31 +76,101 @@ austenite_phase
 # phase_ti = Phase.from_cif("ti.cif")
 # print(phase_ti)
 
-########################################################################################
-# From a space group (note that the point group is derived)
+##############################################################################
+# Phases can also be defined from a space group. This is done using the space
+# group number (see the following useful link for details: http://img.chem.ucl.ac.uk/sgp/large/sgp.htm)
 phase_m3m = ocm.Phase(space_group=225)
 print(phase_m3m)
 
-########################################################################################
-# From a point group (note that the space group is unknown since there are multiple
-# options)
-phase_432 = ocm.Phase(point_group="432")
+##############################################################################
+# Alternately, phases can be derived from a point group, in which case the
+# space group will remain undefined as there  are multiple possible options.
+phase_432 = ocm.Phase(name="unknown", point_group="432")
 print(phase_432)
 
-########################################################################################
-# Non-crystalline phase
+##############################################################################
+# Phases can also be defined without a symmetry, though this will often cause
+# errors
 phase_non = ocm.Phase()
 print(phase_non)
 
-########################################################################################
-# Hexagonal alpha-titanium with a lattice and atoms
-structure_ti = Structure(
-    lattice=Lattice(4.5674, 4.5674, 2.8262, 90, 90, 120),
-    atoms=[Atom("Ti", [0, 0, 0]), Atom("Ti", [1 / 3, 2 / 3, 1 / 2])],
-)
-print(structure_ti)
+##############################################################################
+# Creating a PhaseList
+# --------------------
+#
+# Since CrystalMap objects can contain multiple phases, it is convenient to
+# store sets of Phases as a in iteratable PhaseList object. This can be done
+# by defining individual phases, or by defining the phases during creation
+# of the list
 
-########################################################################################
-phase_ti = ocm.Phase(space_group=191, structure=structure_ti)
-print(phase_ti)
-print(phase_ti.structure)
+phases_from_list = ocm.PhaseList([ferrite_phase, austenite_phase, phase_432])
+print(phases_from_list)
+
+new_phases = ocm.PhaseList(
+    names=["Alpha", "Beta", "Gamma"],
+    space_groups=[75, 229, 225],
+    colors=["red", "orange", "yellow"],
+)
+print(new_phases)
+
+##############################################################################
+# These phases can then be referenced either by their index or their phase name
+print(phases_from_list["Austenite"])
+print(phases_from_list[0])
+print(phases_from_list[:2])
+print(phases_from_list["unknown", "ferrite"])
+
+##############################################################################
+# Modifying Phases and PhaseLists
+# -------------------------------
+#
+# The following Phase attributes can all be modified after initialization:
+#    - name
+#    - space_group
+#    - point_group
+#    - structure
+#    - color
+#
+# Note though that overwriting point_group when space_group has already been
+# defined will throw a warning and the original space group will be erased.
+
+ferrite_phase.point_group = "422"
+print(ferrite_phase)
+
+##############################################################################
+# Similarly in the opposite direction, altering the space group will overwrite
+# the point group. Keep in mind as well that space group attributes are stored
+# as :class:`diffpy.structure.spacegroups.SpaceGroup` instances, whereas
+# point groups are :class:`~orix/quaternion.symmetry.Symmetry` instances.
+phase_m3m.space_group = 230
+print(phase_m3m)
+
+##############################################################################
+# This can also be done with a PhaseList using indexing to choose the Phase to
+# alter.
+phases_from_list[1].space_group = 229
+print(phases_from_list)
+
+##############################################################################
+# Phases can also be added to a PhaseList, either from another Phaselist or
+# from a standalone and/or new Phase, and also deleted. there is also a
+# convenience function for adding a `not indexed` phase, as this often becomes
+# relevant in experimental crystal maps.
+phases_from_list.add(new_phases[0])
+phases_from_list.add(ocm.Phase("sigma", point_group="4/mmm"))
+print(phases_from_list)
+del phases_from_list["unknown"]
+print(phases_from_list)
+phases_from_list.add_not_indexed()
+print(phases_from_list)
+
+
+##############################################################################
+# Shallow Copying Phases
+# ----------------------
+#
+# Finally, note that PhaseLists generated from lists of Phases are shallow copies,
+# meaning changes to the Phases will affect the PhaseLists. This can be seen above
+# in the ferrite phase of `phases_from_list`, which originally had a space group
+# of `Im-3m`, but in a later example has a space group of `None`, reflecting the
+# change made to to `ferrite_phase`.
