@@ -64,7 +64,6 @@ class IPFColorKeyTSL(IPFColorKey):
                     "'direction' must be 'x', 'y','z', or a Vector3D instance"
                 )
 
-            {
         super().__init__(symmetry.laue, direction=direction)
 
     @property
