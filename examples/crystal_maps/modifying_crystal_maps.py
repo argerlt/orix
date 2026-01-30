@@ -18,9 +18,9 @@
 #
 
 r"""
-====================================
-Selecting and Modifying Crystal Maps
-====================================
+===================================
+Selecting and Indexing Crystal Maps
+===================================
 
 This example shows how to select data in a :class:`~orix.crystal_map.CrystalMap`, obtain
 a new map from parts of the data and modify data inplace.
