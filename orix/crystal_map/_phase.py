@@ -25,7 +25,7 @@ import copy
 from pathlib import Path
 import warnings
 
-from diffpy.structure import Lattice, Structure
+import diffpy.structure as dst
 from diffpy.structure.parsers import p_cif
 from diffpy.structure.spacegroups import GetSpaceGroup, SpaceGroup
 from diffpy.structure.symmetryutilities import ExpandAsymmetricUnit
@@ -157,7 +157,7 @@ class Phase:
         name: str | Phase | None = None,
         space_group: int | SpaceGroup | None = None,
         point_group: int | str | Symmetry | None = None,
-        structure: Structure | None = None,
+        structure: dst.Structure | None = None,
         color: str | None = None,
     ) -> None:
         if isinstance(name, Phase):
@@ -179,8 +179,8 @@ class Phase:
             if pg is not None and pg.system is not None:
                 lat = default_lattice(pg.system)
             else:
-                lat = Lattice()
-            structure = Structure(lattice=lat)
+                lat = dst.Lattice()
+            structure = dst.Structure(lattice=lat)
         self.structure = structure
 
         if name is not None:
@@ -190,7 +190,7 @@ class Phase:
     #  Property Getters and Setters  #
     # ------------------------------ #
     @property
-    def structure(self) -> Structure:
+    def structure(self) -> dst.Structure:
         r"""Return or set the crystal structure.
 
         Return or set the crystal structurecontaining a lattice
@@ -209,9 +209,9 @@ class Phase:
         return self._structure
 
     @structure.setter
-    def structure(self, value: Structure) -> None:
+    def structure(self, value: dst.Structure) -> None:
         """Set the crystal structure."""
-        if not isinstance(value, Structure):
+        if not isinstance(value, dst.Structure):
             raise ValueError(f"{value} must be a diffpy.structure.Structure")
 
         # Ensure correct alignment
@@ -222,7 +222,7 @@ class Phase:
         new_value = value.copy()
 
         # Ensure atom positions are expressed in the new basis
-        new_value.placeInLattice(Lattice(base=new_matrix))
+        new_value.placeInLattice(dst.Lattice(base=new_matrix))
 
         # Store old lattice for expand_asymmetric_unit
         self._diffpy_lattice = old_matrix
@@ -386,9 +386,9 @@ class Phase:
 
     @property
     def ar_axis(self) -> Miller:
-        f"""The :math:'a^{*}' axis of the reciprocal lattice.
+        f"""The :math:'a^*' axis of the reciprocal lattice.
 
-        This is the vector describing the :math:`a^{*}` axis of the
+        This is the vector describing the :math:`a^*` axis of the
         reciprocal lattice, expressed in the standard cartesian frame.
 
         Notes
@@ -399,9 +399,9 @@ class Phase:
 
     @property
     def br_axis(self) -> Miller:
-        f"""The :math:'b^{*}' axis of the reciprocal lattice.
+        f"""The :math:'b^*' axis of the reciprocal lattice.
 
-        This is the vector describing the :math:`b^{*}` axis of the
+        This is the vector describing the :math:`b^*` axis of the
         reciprocal lattice, expressed in the standard cartesian frame.
 
         Notes
@@ -412,9 +412,9 @@ class Phase:
 
     @property
     def cr_axis(self) -> Miller:
-        f"""The :math:'c^{*}' axis of the reciprocal lattice.
+        f"""The :math:'c^*' axis of the reciprocal lattice.
 
-        This is the vector describing the :math:`c^{*}` axis of the
+        This is the vector describing the :math:`c^*` axis of the
         reciprocal lattice, expressed in the standard cartesian frame.
 
         Notes
@@ -449,21 +449,20 @@ class Phase:
         space_group: int | SpaceGroup | None = None,
         point_group: int | str | Symmetry | None = None,
         color: str | None = None,
-        a: float = 1.0,
-        b: float = 1.1,
-        c: float = 1.2,
-        alpha: float = 80.0,
-        beta: float = 85.0,
-        gamma: float = 88.0,
+        a: float | None = None,
+        b: float | None = None,
+        c: float | None = None,
+        alpha: float | None = None,
+        beta: float | None = None,
+        gamma: float | None = None,
     ) -> None:
         f"""Create a Phase with triclinic symmetry.
-        
+
         Parameters
         ----------
         {_name_docstring}
         {_sg_docstring}
         {_pg_docstring}
-        {_color_docstring}
         {_color_docstring}
         {_a_docstring}
         {_b_docstring}
@@ -471,24 +470,38 @@ class Phase:
         {_alpha_docstring}
         {_beta_docstring}
         {_gamma_docstring}
-        
+
         Returns
         -------
         phase
             a Phase object with triclinic symmetry
+
+        Notes
+        -----
+        if lattice parameters are not given, a default lattice will
+        be calculated using :class:`~diffpy.structure.lattice.Lattice`
+        as follows:
+
+        >>> Lattice{_default_lattices["triclinic"].abcABG()}
+
         """
-        phase = cls.Phase(
+        if space_group is None and point_group is None:
+            space_group = 1
+        default = _default_lattices["triclinic"].abcABG()
+        given = [a, b, c, alpha, beta, gamma]
+        abcABG = [(j if j is not None else i) for i, j in zip(default, given)]
+        lat = dst.Lattice(*abcABG)
+        phase = cls(
             name=name,
             space_group=space_group,
             point_group=point_group,
             color=color,
+            structure=dst.Structure(lattice=lat),
         )
         if phase.point_group.system != "triclinic":
             raise ValueError(
                 f"{phase.point_group.name} is not a triclinic symmetry."
             )
-        lat = Lattice(a, b, c, alpha, beta, gamma)
-        phase.structure = Structure(lattice=lat)
         return phase
 
     @classmethod
@@ -498,10 +511,10 @@ class Phase:
         space_group: int | SpaceGroup | None = None,
         point_group: int | str | Symmetry | None = None,
         color: str | None = None,
-        a: float = 1.0,
-        b: float = 1.1,
-        c: float = 1.2,
-        beta: float = 85.0,
+        a: float = None,
+        b: float = None,
+        c: float = None,
+        beta: float = None,
     ) -> None:
         f"""Create a Phase with monoclinic symmetry.
         
@@ -510,7 +523,6 @@ class Phase:
         {_name_docstring}
         {_sg_docstring}
         {_pg_docstring}
-        {_color_docstring}
         {_color_docstring}
         {_a_docstring}
         {_b_docstring}
@@ -521,19 +533,33 @@ class Phase:
         -------
         phase
             a Phase object with monoclinic symmetry
+
+        Notes
+        -----
+        if lattice parameters are not given, a default lattice will
+        be calculated using :class:`~diffpy.structure.lattice.Lattice`
+        as follows:
+
+        >>> Lattice{_default_lattices["monoclinic"].abcABG()}
+
         """
-        phase = cls.Phase(
+        if space_group is None and point_group is None:
+            space_group = 3
+        default = _default_lattices["monoclinic"].abcABG()
+        given = [a, b, c, None, beta, None]
+        abcABG = [(j if j is not None else i) for i, j in zip(default, given)]
+        lat = dst.Lattice(*abcABG)
+        phase = cls(
             name=name,
             space_group=space_group,
             point_group=point_group,
             color=color,
+            structure=dst.Structure(lattice=lat),
         )
         if phase.point_group.system != "monoclinic":
             raise ValueError(
                 f"{phase.point_group.name} is not a monoclinic symmetry."
             )
-        lat = Lattice(a, b, c, 90.0, beta, 90.0)
-        phase.structure = Structure(lattice=lat)
         return phase
 
     @classmethod
@@ -543,9 +569,9 @@ class Phase:
         space_group: int | SpaceGroup | None = None,
         point_group: int | str | Symmetry | None = None,
         color: str | None = None,
-        a: float = 1.0,
-        b: float = 1.1,
-        c: float = 1.2,
+        a: float = None,
+        b: float = None,
+        c: float = None,
     ) -> None:
         f"""Create a Phase with orthorhombic symmetry.
         
@@ -555,7 +581,6 @@ class Phase:
         {_sg_docstring}
         {_pg_docstring}
         {_color_docstring}
-        {_color_docstring}
         {_a_docstring}
         {_b_docstring}
         {_c_docstring}
@@ -564,19 +589,33 @@ class Phase:
         -------
         phase
             a Phase object with orthorhombic symmetry
+
+        Notes
+        -----
+        if lattice parameters are not given, a default lattice will
+        be calculated using :class:`~diffpy.structure.lattice.Lattice`
+        as follows:
+
+        >>> Lattice{_default_lattices["orthorhombic"].abcABG()}
+
         """
-        phase = cls.Phase(
+        if space_group is None and point_group is None:
+            space_group = 16
+        default = _default_lattices["orthorhombic"].abcABG()
+        given = [a, b, c, None, None, None]
+        abcABG = [(j if j is not None else i) for i, j in zip(default, given)]
+        lat = dst.Lattice(*abcABG)
+        phase = cls(
             name=name,
             space_group=space_group,
             point_group=point_group,
             color=color,
+            structure=dst.Structure(lattice=lat),
         )
         if phase.point_group.system != "orthorhombic":
             raise ValueError(
                 f"{phase.point_group.name} is not an orthorhombic symmetry."
             )
-        lat = Lattice(a, b, c, 90.0, 90.0, 90.0)
-        phase.structure = Structure(lattice=lat)
         return phase
 
     @classmethod
@@ -586,8 +625,8 @@ class Phase:
         space_group: int | SpaceGroup | None = None,
         point_group: int | str | Symmetry | None = None,
         color: str | None = None,
-        a: float = 1.0,
-        c: float = 1.2,
+        a: float = None,
+        c: float = None,
     ) -> None:
         f"""Create a Phase with tetragonal symmetry.
         
@@ -597,7 +636,6 @@ class Phase:
         {_sg_docstring}
         {_pg_docstring}
         {_color_docstring}
-        {_color_docstring}
         {_a_docstring}
         {_c_docstring}
         
@@ -605,19 +643,33 @@ class Phase:
         -------
         phase
             a Phase object with tetragonal symmetry
+
+        Notes
+        -----
+        if lattice parameters are not given, a default lattice will
+        be calculated using :class:`~diffpy.structure.lattice.Lattice`
+        as follows:
+
+        >>> Lattice{_default_lattices["tetragonal"].abcABG()}
+
         """
-        phase = cls.Phase(
+        if space_group is None and point_group is None:
+            space_group = 75
+        default = _default_lattices["tetragonal"].abcABG()
+        given = [a, a, c, None, None, None]
+        abcABG = [(j if j is not None else i) for i, j in zip(default, given)]
+        lat = dst.Lattice(*abcABG)
+        phase = cls(
             name=name,
             space_group=space_group,
             point_group=point_group,
             color=color,
+            structure=dst.Structure(lattice=lat),
         )
         if phase.point_group.system != "tetragonal":
             raise ValueError(
                 f"{phase.point_group.name} is not a tetragonal symmetry."
             )
-        lat = Lattice(a, a, c, 90.0, 90.0, 90.0)
-        phase.structure = Structure(lattice=lat)
         return phase
 
     @classmethod
@@ -627,8 +679,8 @@ class Phase:
         space_group: int | SpaceGroup | None = None,
         point_group: int | str | Symmetry | None = None,
         color: str | None = None,
-        a: float = 1.0,
-        alpha: float = 80.0,
+        a: float = None,
+        alpha: float = None,
     ) -> None:
         f"""Create a Phase with trigonal (rhombohedral) symmetry.
         
@@ -638,7 +690,6 @@ class Phase:
         {_sg_docstring}
         {_pg_docstring}
         {_color_docstring}
-        {_color_docstring}
         {_a_docstring}
         {_alpha_docstring}
         
@@ -646,19 +697,33 @@ class Phase:
         -------
         phase
             a Phase object with trigonal (rhombohedral) symmetry
+
+        Notes
+        -----
+        if lattice parameters are not given, a default lattice will
+        be calculated using :class:`~diffpy.structure.lattice.Lattice`
+        as follows:
+
+        >>> Lattice{_default_lattices["trigonal"].abcABG()}
+
         """
-        phase = cls.Phase(
+        if space_group is None and point_group is None:
+            space_group = 143
+        default = _default_lattices["trigonal"].abcABG()
+        given = [a, a, a, alpha, alpha, alpha]
+        abcABG = [(j if j is not None else i) for i, j in zip(default, given)]
+        lat = dst.Lattice(*abcABG)
+        phase = cls(
             name=name,
             space_group=space_group,
             point_group=point_group,
             color=color,
+            structure=dst.Structure(lattice=lat),
         )
         if phase.point_group.system != "trigonal":
             raise ValueError(
                 f"{phase.point_group.name} is not a trigonal (rhombohedral) symmetry."
             )
-        lat = Lattice(a, a, a, alpha, alpha, alpha)
-        phase.structure = Structure(lattice=lat)
         return phase
 
     @classmethod
@@ -668,10 +733,10 @@ class Phase:
         space_group: int | SpaceGroup | None = None,
         point_group: int | str | Symmetry | None = None,
         color: str | None = None,
-        a: float = 1.0,
-        c: float = 1.2,
+        a: float = None,
+        c: float = None,
     ) -> None:
-        f"""Create a Phase with triclinic symmetry.
+        f"""Create a Phase with hexagonal symmetry.
         
         Parameters
         ----------
@@ -679,27 +744,40 @@ class Phase:
         {_sg_docstring}
         {_pg_docstring}
         {_color_docstring}
-        {_color_docstring}
         {_a_docstring}
         {_c_docstring}
         
         Returns
         -------
         phase
-            a Phase object with triclinic symmetry
+            a Phase object with hexagonal symmetry
+
+        Notes
+        -----
+        if lattice parameters are not given, a default lattice will
+        be calculated using :class:`~diffpy.structure.lattice.Lattice`
+        as follows:
+
+        >>> Lattice{_default_lattices["hexagonal"].abcABG()}
+
         """
-        phase = cls.Phase(
+        if space_group is None and point_group is None:
+            space_group = 168
+        default = _default_lattices["hexagonal"].abcABG()
+        given = [a, a, c, None, None, None]
+        abcABG = [(j if j is not None else i) for i, j in zip(default, given)]
+        lat = dst.Lattice(*abcABG)
+        phase = cls(
             name=name,
             space_group=space_group,
             point_group=point_group,
             color=color,
+            structure=dst.Structure(lattice=lat),
         )
         if phase.point_group.system != "hexagonal":
             raise ValueError(
                 f"{phase.point_group.name} is not a hexagonal symmetry."
             )
-        lat = Lattice(a, a, c, 90, 90, 120)
-        phase.structure = Structure(lattice=lat)
         return phase
 
     @classmethod
@@ -709,7 +787,7 @@ class Phase:
         space_group: int | SpaceGroup | None = None,
         point_group: int | str | Symmetry | None = None,
         color: str | None = None,
-        a: float = 1.0,
+        a: float = None,
     ) -> None:
         f"""Create a Phase with cubic symmetry.
         
@@ -719,32 +797,44 @@ class Phase:
         {_sg_docstring}
         {_pg_docstring}
         {_color_docstring}
-        {_color_docstring}
         {_a_docstring}
         
         Returns
         -------
         phase
             a Phase object with cubic symmetry
+
+        Notes
+        -----
+        if lattice parameters are not given, a default lattice will
+        be calculated using :class:`~diffpy.structure.lattice.Lattice`
+        as follows:
+
+        >>> Lattice{_default_lattices["cubic"].abcABG()}
+
         """
-        phase = cls.Phase(
+        if space_group is None and point_group is None:
+            space_group = 168
+        default = _default_lattices["cubic"].abcABG()
+        given = [a, a, a, None, None, None]
+        abcABG = [(j if j is not None else i) for i, j in zip(default, given)]
+        lat = dst.Lattice(*abcABG)
+        phase = cls(
             name=name,
             space_group=space_group,
             point_group=point_group,
             color=color,
+            structure=dst.Structure(lattice=lat),
         )
-        if phase.point_group.system != "triclinic":
+        if phase.point_group.system != "cubic":
             raise ValueError(
-                f"{phase.point_group.name} is not a triclinic symmetry."
+                f"{phase.point_group.name} is not a cubic symmetry."
             )
-        lat = Lattice(a, a, a, 90, 90, 90)
-        phase.structure = Structure(lattice=lat)
         return phase
 
     @classmethod
     def from_cif(cls, filename: str | Path) -> Phase:
-        r"""Return a new phase from a Crystallographic Information File
-        (CIF).
+        r"""Create a Phase from a Crystallographic Information File (CIF).
 
         Parameters
         ----------
@@ -777,9 +867,7 @@ class Phase:
         return cls(name, space_group, structure=structure)
 
     def deepcopy(self) -> Phase:
-        """Return a deep copy using :py:func:`~copy.deepcopy`
-        function.
-        """
+        """Return a deep copy using :py:func:`~copy.deepcopy` function."""
         return copy.deepcopy(self)
 
     def expand_asymmetric_unit(self) -> Phase:
@@ -817,7 +905,7 @@ class Phase:
 
         # Ensure atom positions are expressed in diffpy's convention
         diffpy_structure = self.structure.copy()
-        diffpy_structure.placeInLattice(Lattice(base=self._diffpy_lattice))
+        diffpy_structure.placeInLattice(dst.Lattice(base=self._diffpy_lattice))
         xyz = diffpy_structure.xyz
         diffpy_structure.clear()
 
@@ -901,17 +989,18 @@ def new_structure_matrix_from_alignment(
     return new_matrix
 
 
-def default_lattice(system: VALID_SYSTEMS) -> Lattice:
-    if system in [
-        "triclinic",
-        "monoclinic",
-        "orthorhombic",
-        "tetragonal",
-        "cubic",
-    ]:
-        lat = Lattice()
-    elif system in ["trigonal", "hexagonal"]:
-        lat = Lattice(1, 1, 1, 90, 90, 120)
-    else:
+_default_lattices = {
+    "triclinic": dst.Lattice(1.0, 1.1, 1.2, 85, 82, 80),
+    "monoclinic": dst.Lattice(1.0, 1.1, 1.2, 90, 82, 90),
+    "orthorhombic": dst.Lattice(1.0, 1.1, 1.2, 90, 90, 90),
+    "tetragonal": dst.Lattice(1.0, 1.0, 1.2, 90, 90, 90),
+    "trigonal": dst.Lattice(1.0, 1.0, 1.0, 81, 81, 81),
+    "hexagonal": dst.Lattice(1.0, 1.0, 1.5, 90, 90, 120),
+    "cubic": dst.Lattice(1.0, 1.0, 1.0, 90, 90, 90),
+}
+
+
+def default_lattice(system: VALID_SYSTEMS) -> dst.Lattice:
+    if system not in _default_lattices:
         raise ValueError(f"Unknown crystal system {system!r}")
-    return lat
+    return _default_lattices[system]
