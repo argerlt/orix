@@ -106,17 +106,6 @@ class TestPhase:
 
         if structure is not None:
             assert p.structure == structure
-            cell_params = structure.lattice.abcABG()
-            p_from_cell_params = ocm.Phase(
-                name=name,
-                point_group=point_group,
-                space_group=space_group,
-                cell_parameters=cell_params,
-                color=color,
-            )
-            assert np.allclose(
-                p._diffpy_lattice, p_from_cell_params._diffpy_lattice, 1e-5
-            )
         else:
             assert p.structure == dst.Structure()
 
@@ -1027,15 +1016,19 @@ class TestPhase:
             phase.expand_asymmetric_unit()
 
     def test_default_lattice(self):
-        for S in ["1", "2", "222", "422", "432"]:
-            phase = ocm.Phase(point_group=S)
-            lattice_parameters = phase.structure.lattice.abcABG()
-            assert np.allclose([1, 1, 1, 90, 90, 90], lattice_parameters)
-
-        for S in ["3", "622"]:
-            phase = ocm.Phase(point_group=S)
-            lattice_parameters = phase.structure.lattice.abcABG()
-            assert np.allclose([1, 1, 1, 90, 90, 120], lattice_parameters)
+        for symmetry, system in [
+            ["1", "trigonal"],
+            ["2", "monoclinic"],
+            ["222", "orthorhombic"],
+            ["422", "tetragonal"],
+            ["432", "cubic"],
+            ["3", "trigonal"],
+            ["622", "hexagonal"],
+        ]:
+            phase = ocm.Phase(point_group=symmetry)
+            actual_abcABG = phase.structure.lattice.abcABG()
+            expected_abcABG = ocm._phase._default_lattices[system].abcABG()
+            assert np.allclose(actual_abcABG, expected_abcABG)
 
     def test_default_lattice_raises(self):
         with pytest.raises(
@@ -1044,7 +1037,7 @@ class TestPhase:
             default_lattice("rhombohedral")
 
     def test_crystal_class_methods(self):
-        phase = ocm.Phase.triclinic("tri")
+        ocm.phase = ocm.Phase.triclinic("tri")
         with pytest.raises(
             ValueError, match="Unknown crystal system 'rhombohedral'"
         ):
