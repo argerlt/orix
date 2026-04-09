@@ -152,11 +152,11 @@ class Phase:
         if isinstance(name, Phase):
             return Phase.__init__(
                 self,
-                name.name,
-                name.space_group,
-                name.point_group,
-                name.structure.copy(),
-                name.color,
+                name=name.name,
+                space_group=name.space_group,
+                point_group=name.point_group,
+                structure=name.structure.copy(),
+                color=name.color,
             )
 
         self.space_group = space_group  # Needs to be set before point group
@@ -581,11 +581,18 @@ def new_structure_matrix_from_alignment(
     return new_matrix
 
 
-def default_lattice(system: VALID_SYSTEMS) -> Lattice:
-    if system in ["triclinic", "monoclinic", "orthorhombic", "tetragonal", "cubic"]:
-        lat = Lattice()
-    elif system in ["trigonal", "hexagonal"]:
-        lat = Lattice(1, 1, 1, 90, 90, 120)
-    else:
+_default_lattices = {
+    "triclinic": dst.Lattice(1.0, 1.1, 1.2, 85, 82, 80),
+    "monoclinic": dst.Lattice(1.0, 1.1, 1.2, 90, 82, 90),
+    "orthorhombic": dst.Lattice(1.0, 1.1, 1.2, 90, 90, 90),
+    "tetragonal": dst.Lattice(1.0, 1.0, 1.2, 90, 90, 90),
+    "trigonal": dst.Lattice(1.0, 1.0, 1.0, 90, 90, 120),
+    "hexagonal": dst.Lattice(1.0, 1.0, 1.5, 90, 90, 120),
+    "cubic": dst.Lattice(1.0, 1.0, 1.0, 90, 90, 90),
+}
+
+
+def default_lattice(system: VALID_SYSTEMS) -> dst.Lattice:
+    if system not in _default_lattices:
         raise ValueError(f"Unknown crystal system {system!r}")
-    return lat
+    return _default_lattices[system]
