@@ -26,7 +26,7 @@ from orix.crystal_map._phase import (
     default_lattice,
     new_structure_matrix_from_alignment,
 )
-from orix.quaternion.symmetry import O, Symmetry
+import orix.quaternion.symmetry as osm
 
 
 class TestPhase:
@@ -58,7 +58,7 @@ class TestPhase:
             ),
             (
                 "My awes0me phase!",
-                O,
+                osm.O,
                 211,
                 "C1",
                 "tab:orange",
@@ -97,7 +97,7 @@ class TestPhase:
 
         if point_group == "43":
             point_group = "432"
-        if isinstance(point_group, Symmetry):
+        if isinstance(point_group, osm.Symmetry):
             point_group = point_group.name
         assert p.point_group.name == point_group
 
@@ -1016,16 +1016,101 @@ class TestPhase:
             phase.expand_asymmetric_unit()
 
     def test_default_lattice(self):
-        for S in ["1", "2", "222", "422", "432"]:
-            phase = Phase(point_group=S)
-            lattice_parameters = phase.structure.lattice.abcABG()
-            assert np.allclose([1, 1, 1, 90, 90, 90], lattice_parameters)
+        for symmetry, system in [
+            ["1", "triclinic"],
+            ["2", "monoclinic"],
+            ["222", "orthorhombic"],
+            ["422", "tetragonal"],
+            ["432", "cubic"],
+            ["3", "trigonal"],
+            ["622", "hexagonal"],
+        ]:
+            phase = ocm.Phase(point_group=symmetry)
+            actual_abcABG = phase.structure.lattice.abcABG()
+            expected_abcABG = ocm._phase._default_lattices[system].abcABG()
+            assert np.allclose(actual_abcABG, expected_abcABG)
+        abcABG = ocm._phase.default_lattice("hexagonal").abcABG()
+        assert np.allclose(abcABG, [1, 1, 1.5, 90, 90, 120])
+        with pytest.raises(ValueError, match="Unknown"):
+            ocm._phase.default_lattice("banana")
 
-        for S in ["3", "622"]:
-            phase = Phase(point_group=S)
-            lattice_parameters = phase.structure.lattice.abcABG()
-            assert np.allclose([1, 1, 1, 90, 90, 120], lattice_parameters)
+    def test_triclinic_classmethod(self):
+        out = ocm.Phase.triclinic()
+        out = ocm.Phase.triclinic("aa", space_group=1)
+        out = ocm.Phase.triclinic(space_group=dst.spacegroups.GetSpaceGroup(2))
+        out = ocm.Phase.triclinic(point_group=osm.Ci)
+        out = ocm.Phase.triclinic(point_group="1")
+        with pytest.raises(ValueError):
+            out = ocm.Phase.triclinic(space_group=90)
+            out = ocm.Phase.triclinic(point_group=osm.D6)
+        del out
 
-    def test_default_lattice_raises(self):
-        with pytest.raises(ValueError, match="Unknown crystal system 'rhombohedral'"):
-            default_lattice("rhombohedral")
+    def test_monoclinic_classmethod(self):
+        out = ocm.Phase.monoclinic()
+        out = ocm.Phase.monoclinic("aa", space_group=3)
+        out = ocm.Phase.monoclinic(space_group=dst.spacegroups.GetSpaceGroup(15))
+        out = ocm.Phase.monoclinic(point_group=osm.C2)
+        out = ocm.Phase.monoclinic(point_group="2")
+        with pytest.raises(ValueError):
+            out = ocm.Phase.monoclinic(space_group=90)
+            out = ocm.Phase.monoclinic(point_group=osm.D6)
+        del out
+
+    def test_orthorhombic_classmethod(self):
+        out = ocm.Phase.orthorhombic()
+        out = ocm.Phase.orthorhombic("aa", space_group=16)
+        out = ocm.Phase.orthorhombic(
+            space_group=dst.spacegroups.GetSpaceGroup(74)
+        )
+        out = ocm.Phase.orthorhombic(point_group=osm.D2)
+        out = ocm.Phase.orthorhombic(point_group="222")
+        with pytest.raises(ValueError):
+            out = ocm.Phase.orthorhombic(space_group=90)
+            out = ocm.Phase.orthorhombic(point_group=osm.D6)
+        del out
+
+    def test_tetragonal_classmethod(self):
+        out = ocm.Phase.tetragonal()
+        out = ocm.Phase.tetragonal("aa", space_group=75)
+        out = ocm.Phase.tetragonal(
+            space_group=dst.spacegroups.GetSpaceGroup(142)
+        )
+        out = ocm.Phase.tetragonal(point_group=osm.D4)
+        out = ocm.Phase.tetragonal(point_group="422")
+        with pytest.raises(ValueError):
+            out = ocm.Phase.tetragonal(space_group=9)
+            out = ocm.Phase.tetragonal(point_group=osm.D6)
+        del out
+
+    def test_cubic_classmethod(self):
+        out = ocm.Phase.cubic()
+        out = ocm.Phase.cubic("aa", space_group=195)
+        out = ocm.Phase.cubic(space_group=dst.spacegroups.GetSpaceGroup(230))
+        out = ocm.Phase.cubic(point_group=osm.Oh)
+        out = ocm.Phase.cubic(point_group="m3m")
+        with pytest.raises(ValueError):
+            out = ocm.Phase.cubic(space_group=90)
+            out = ocm.Phase.cubic(point_group=osm.D6)
+        del out
+
+    def test_trigonal_classmethod(self):
+        out = ocm.Phase.trigonal()
+        out = ocm.Phase.trigonal("aa", space_group=143)
+        out = ocm.Phase.trigonal(space_group=dst.spacegroups.GetSpaceGroup(167))
+        out = ocm.Phase.trigonal(point_group=osm.C3)
+        out = ocm.Phase.trigonal(point_group="3")
+        with pytest.raises(ValueError):
+            out = ocm.Phase.trigonal(space_group=90)
+            out = ocm.Phase.trigonal(point_group=osm.D6)
+        del out
+
+    def test_hexagonal_classmethod(self):
+        out = ocm.Phase.hexagonal()
+        out = ocm.Phase.hexagonal("aa", space_group=168)
+        out = ocm.Phase.hexagonal(space_group=dst.spacegroups.GetSpaceGroup(194))
+        out = ocm.Phase.hexagonal(point_group=osm.D6)
+        out = ocm.Phase.hexagonal(point_group="622")
+        with pytest.raises(ValueError):
+            out = ocm.Phase.hexagonal(space_group=90)
+            out = ocm.Phase.hexagonal(point_group=osm.D4)
+        del out
