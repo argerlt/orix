@@ -48,9 +48,10 @@ from orix.vector.vector3d import Vector3d
 # ======================== #
 
 _name_docstring = """name
-        Phase name. Overwrites the name in the *structure*. A phase can
-        also be given, in which case a copy is returned and all other
-        parameters are ignored.
+        The name of the phase. If None, a name will be inhereted from
+        the *structure* input if available. Another Phase object can
+        also be given instead, in which case a copy of the Phase is
+        returned and all further parameters are ignored.
     """
 _sg_docstring = """space_group
         Space group describing the symmetry operations resulting from
@@ -61,15 +62,13 @@ _sg_docstring = """space_group
 _pg_docstring = """point_group
         Point group describing the symmetry operations of the phase's
         crystal structure, according to the International Tables for
-        Crystallography. If neither this nor *space_group* is given, it
-        is set to None. If not given but *space_group* is, it is derived
-        from the space group. If both this and *space_group* is given,
-        the space group must to be derived from adding translational
-        symmetry to the point group.
+        Crystallography. It must be compatable with the *space_group* 
+        input if both are given. If None, the correct point group will
+        be derived from *space_group* if given, or left as None.
     """
 _color_docstring = """color
-        Phase color. If not given, it is set to the first default
-        Matplotlib color "tab:blue".
+        Phase color. If not given, the color is set to Matlab's
+        default blue.
     """
 _a_docstring = """a
         The unit cell length a (arbitrary units).
@@ -89,57 +88,57 @@ _beta_docstring = """beta
 _gamma_docstring = """gamma
         The angle (in degrees) between the a and b axes of the unit cell.
     """
-_xtal2cart_docstring = """There are multiple valid methods in use for converting between
+_xtal2cart_docstring = r"""There are multiple valid methods in use for converting between
         crystallographic and cartesian reference frames. ORIX uses
         the form defined in the International Tables for
-        Crystallography, Volume A, section 1.5, and reworded in 
-        Structure of Materials, second edition, equation 7.33 as:
+        Crystallography, Volume A, section 1.5, which is matches 
+        Structure of Materials, second edition, equation 7.33:
             
          .. math::
-             e_1 = \frac{a_1, |a_1|}
-             e_2 = e_3 \cross e_1
-             e_3 = \frac{a_3^{*}, |a_3^{*}|}
+             \bf{e_1} = \frac{\bf{a_1}}{ |\bf{a_1}|} \quad\quad
+             \bf{e_2} = \bf{e_3} \times \bf{e_1} \quad\quad             
+             \bf{e_3} = \frac{\bf{a_3^{*}}}{ |\bf{a_3^{*}}|}
 
-        where :math:`a` is the direct lattice basis vectors
-        :math:`(a, b, c)`, :math:`a^{*}` the reciprocal lattice basis vectors
-        :math:`(a^{*}, b^{*}, c^{*})`, and :math:`e` the
-        cartesion basis vectors :math`(x, y, z)`. Notably, this sets:
-            1) :math:`a_1` parallel with :math:`e_1`
-            2) :math:`e_2` perpendicular to :math:`a_3` and :math:`a_1`
-            3) :math:`e_3` perpendicular to :math:`a_1` and :math:`a_2`
+        where :math:`\bf{a_{i}}` represents the :math:`(a, b, c)` direct lattice basis vectors,
+        :math:`\bf{a_{i}^{*}}` represents the :math:`(a^{*}, b^{*}, c^{*})` reciprocal lattice basis vectors,
+        and :math:`\bf{e_{i}}` represents the :math`(x, y, z)` cartesion basis vectors.
+        Notably, this sets:
+            1) :math:`\bf{a_1}` parallel with :math:`\bf{e_1}`
+            2) :math:`\bf{e_2}` perpendicular to :math:`\bf{a_3}` and :math:`\bf{a_1}`
+            3) :math:`\bf{e_3}` perpendicular to :math:`\bf{a_1}` and :math:`\bf{a_2}`
         This is different from some popular XRD conventions that
-        instead set :math:`a_3` parallel to :math:'e_3'. Users should
+        instead set :math:`\bf{a_3}` parallel to :math:`\bf{e_3}`. Users should
         take care to determine which convention was used when importing
         data from other sources.
         
-        Regardless of choice, the reciprocal basis vectors :math:{a^{*}}
+        Regardless of choice, the reciprocal basis vectors :math:`{\bf{a^{*}}}`
         are then defined as 
         
         .. math::
-            a_i * a_j^{*}=\delta_{ij}
+            \bf{a_i} * \bf{a_j^{*}}=\delta_{ij}
         
-        where :math:`delta_{ij}` is the Kronecker delta. details on how
+        where :math:`\delta_{ij}` is the Kronecker delta. Details on how
         to solves these equations for every crystal system can be found
         in Structure of Materials, second edition, chapters 6 and 7.
         """
 
 
 class Phase:
-    f"""Symmetry and unit cell of a phase in a crystallographic map.
+    """Symmetry and unit cell of a phase in a crystallographic map.
 
     The phase can be crystallographic or non-crystallographic, with the
     latter not having a crystal structure or symmetry set.
 
     Parameters
     ----------
-    {_name_docstring}
-    {_sg_docstring}
-    {_pg_docstring}
+    %s
+    %s
+    %s
     structure
         Unit cell with atoms and a lattice. If not given, a default
         :class:`~diffpy.structure.structure.Structure` compatible with
         the symmetry is used.
-    {_color_docstring}
+    %s
 
     Notes
     -----
@@ -150,7 +149,7 @@ class Phase:
         [point_group.name for point_group in oqu.symmetry._groups]
         ```
 
-    """
+    """  # %s values are replaced with docstrings after Phase is fully defined.
 
     def __init__(
         self,
@@ -347,81 +346,89 @@ class Phase:
 
     @property
     def a_axis(self) -> Miller:
-        f"""The :math:'a' axis of the crystal lattice.
+        """The :math:`a` axis of the crystal lattice.
 
         This is the vector describing the :math:`a` axis of the crystal
         lattice, expressed in the standard cartesian frame.
 
         Notes
         -----
-        {_xtal2cart_docstring}
+        %s
         """
         return Miller(uvw=(1, 0, 0), phase=self)
 
     @property
     def b_axis(self) -> Miller:
-        f"""The :math:'b' axis of the crystal lattice.
+        """The :math:'b' axis of the crystal lattice.
 
         This is the vector describing the :math:`b` axis of the crystal
         lattice, expressed in the standard cartesian frame.
 
         Notes
         -----
-        {_xtal2cart_docstring}
+        %s
         """
         return Miller(uvw=(0, 1, 0), phase=self)
 
     @property
     def c_axis(self) -> Miller:
-        f"""The :math:'c' axis of the crystal lattice.
+        """The :math:'c' axis of the crystal lattice.
 
         This is the vector describing the :math:`c` axis of the crystal
         lattice, expressed in the standard cartesian frame.
 
         Notes
         -----
-        {_xtal2cart_docstring}
+        %s
         """
         return Miller(uvw=(0, 0, 1), phase=self)
 
     @property
     def ar_axis(self) -> Miller:
-        f"""The :math:'a^*' axis of the reciprocal lattice.
+        """The :math:'a^*' axis of the reciprocal lattice.
 
         This is the vector describing the :math:`a^*` axis of the
         reciprocal lattice, expressed in the standard cartesian frame.
 
         Notes
         -----
-        {_xtal2cart_docstring}
+        %s
         """
         return Miller(hkl=(1, 0, 0), phase=self)
 
     @property
     def br_axis(self) -> Miller:
-        f"""The :math:'b^*' axis of the reciprocal lattice.
+        """The :math:'b^*' axis of the reciprocal lattice.
 
         This is the vector describing the :math:`b^*` axis of the
         reciprocal lattice, expressed in the standard cartesian frame.
 
         Notes
         -----
-        {_xtal2cart_docstring}
+        %s
         """
         return Miller(hkl=(0, 1, 0), phase=self)
 
     @property
     def cr_axis(self) -> Miller:
-        f"""The :math:'c^*' axis of the reciprocal lattice.
+        """The :math:'c^*' axis of the reciprocal lattice.
 
         This is the vector describing the :math:`c^*` axis of the
         reciprocal lattice, expressed in the standard cartesian frame.
 
         Notes
         -----
-        {_xtal2cart_docstring}
+        %s
         """
         return Miller(hkl=(0, 0, 1), phase=self)
+
+    # add repeated text to axis docstrings.
+    a_axis.__doc__ %= _xtal2cart_docstring
+    b_axis.__doc__ %= _xtal2cart_docstring
+    c_axis.__doc__ %= _xtal2cart_docstring
+    ar_axis.__doc__ %= _xtal2cart_docstring
+    br_axis.__doc__ %= _xtal2cart_docstring
+    cr_axis.__doc__ %= _xtal2cart_docstring
 
     def __repr__(self) -> str:
         if self.point_group is not None:
@@ -456,20 +463,20 @@ class Phase:
         beta: float | None = None,
         gamma: float | None = None,
     ) -> None:
-        f"""Create a Phase with triclinic symmetry.
+        """Create a Phase with triclinic symmetry.
 
         Parameters
         ----------
-        {_name_docstring}
-        {_sg_docstring}
-        {_pg_docstring}
-        {_color_docstring}
-        {_a_docstring}
-        {_b_docstring}
-        {_c_docstring}
-        {_alpha_docstring}
-        {_beta_docstring}
-        {_gamma_docstring}
+        %s
+        %s
+        %s
+        %s
+        %s
+        %s
+        %s
+        %s
+        %s
+        %s
 
         Returns
         -------
@@ -485,6 +492,18 @@ class Phase:
         >>> Lattice{_default_lattices["triclinic"].abcABG()}
 
         """
+        cls.__doc__ %= (
+            _name_docstring,
+            _sg_docstring,
+            _pg_docstring,
+            _color_docstring,
+            _a_docstring,
+            _b_docstring,
+            _c_docstring,
+            _alpha_docstring,
+            _beta_docstring,
+            _gamma_docstring,
+        )
         if space_group is None and point_group is None:
             space_group = 1
         default = _default_lattices["triclinic"].abcABG()
@@ -928,6 +947,14 @@ class Phase:
         expanded_phase.structure = diffpy_structure
 
         return expanded_phase
+
+
+Phase.__doc__ %= (
+    _name_docstring,
+    _sg_docstring,
+    _pg_docstring,
+    _color_docstring,
+)
 
 
 def new_structure_matrix_from_alignment(
