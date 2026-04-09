@@ -202,9 +202,7 @@ class Phase:
 
         # Ensure correct alignment
         old_matrix = value.lattice.base
-        new_matrix = new_structure_matrix_from_alignment(
-            old_matrix, x="a", z="c*"
-        )
+        new_matrix = new_structure_matrix_from_alignment(old_matrix, x="a", z="c*")
         new_value = value.copy()
 
         # Ensure atom positions are expressed in the new basis
@@ -508,9 +506,7 @@ class Phase:
             structure=dst.Structure(lattice=lat),
         )
         if phase.point_group.system != "triclinic":
-            raise ValueError(
-                f"{phase.point_group.name} is not a triclinic symmetry."
-            )
+            raise ValueError(f"{phase.point_group.name} is not a triclinic symmetry.")
         return phase
 
     @classmethod
@@ -586,9 +582,7 @@ class Phase:
             structure=dst.Structure(lattice=lat),
         )
         if phase.point_group.system != "monoclinic":
-            raise ValueError(
-                f"{phase.point_group.name} is not a monoclinic symmetry."
-            )
+            raise ValueError(f"{phase.point_group.name} is not a monoclinic symmetry.")
         return phase
 
     @classmethod
@@ -730,9 +724,7 @@ class Phase:
             structure=dst.Structure(lattice=lat),
         )
         if phase.point_group.system != "tetragonal":
-            raise ValueError(
-                f"{phase.point_group.name} is not a tetragonal symmetry."
-            )
+            raise ValueError(f"{phase.point_group.name} is not a tetragonal symmetry.")
         return phase
 
     @classmethod
@@ -870,9 +862,7 @@ class Phase:
             structure=dst.Structure(lattice=lat),
         )
         if phase.point_group.system != "hexagonal":
-            raise ValueError(
-                f"{phase.point_group.name} is not a hexagonal symmetry."
-            )
+            raise ValueError(f"{phase.point_group.name} is not a hexagonal symmetry.")
         return phase
 
     @classmethod
@@ -936,9 +926,7 @@ class Phase:
             structure=dst.Structure(lattice=lat),
         )
         if phase.point_group.system != "cubic":
-            raise ValueError(
-                f"{phase.point_group.name} is not a cubic symmetry."
-            )
+            raise ValueError(f"{phase.point_group.name} is not a cubic symmetry.")
         return phase
 
     @classmethod
