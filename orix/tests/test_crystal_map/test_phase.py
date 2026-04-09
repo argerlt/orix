@@ -40,9 +40,7 @@ class TestPhase:
                 None,
                 "tab:blue",
                 (0.121568, 0.466666, 0.705882),
-                dst.Structure(
-                    title="Super", lattice=dst.Lattice(1, 1, 1, 90, 90, 90)
-                ),
+                dst.Structure(title="Super", lattice=dst.Lattice(1, 1, 1, 90, 90, 90)),
             ),
             (None, "1", 1, "blue", "blue", (0, 0, 1), dst.Structure()),
             (
@@ -52,9 +50,7 @@ class TestPhase:
                 "xkcd:salmon",
                 "xkcd:salmon",
                 (1, 0.474509, 0.423529),
-                dst.Structure(
-                    title="ni", lattice=dst.Lattice(1, 2, 3, 90, 90, 90)
-                ),
+                dst.Structure(title="ni", lattice=dst.Lattice(1, 2, 3, 90, 90, 90)),
             ),
             (
                 "My awes0me phase!",
@@ -167,9 +163,7 @@ class TestPhase:
     def test_set_phase_point_group(self, point_group, point_group_name, fails):
         p = ocm.Phase()
         if fails:
-            with pytest.raises(
-                ValueError, match=f"'{point_group}' must be of type"
-            ):
+            with pytest.raises(ValueError, match=f"'{point_group}' must be of type"):
                 p.point_group = point_group
         else:
             p.point_group = point_group
@@ -191,17 +185,13 @@ class TestPhase:
     def test_set_structure_phase_name(self):
         name = "al"
         p = ocm.Phase(name=name)
-        p.structure = dst.Structure(
-            lattice=dst.Lattice(*([0.405] * 3 + [90] * 3))
-        )
+        p.structure = dst.Structure(lattice=dst.Lattice(*([0.405] * 3 + [90] * 3)))
         assert p.name == name
         assert p.structure.title == name
 
     def test_set_structure_raises(self):
         p = ocm.Phase()
-        with pytest.raises(
-            ValueError, match=".* must be a diffpy.structure.Structure"
-        ):
+        with pytest.raises(ValueError, match=".* must be a diffpy.structure.Structure"):
             p.structure = [1, 2, 3, 90, 90, 90]
 
     @pytest.mark.parametrize(
@@ -258,9 +248,7 @@ class TestPhase:
         assert p.__repr__() == p2.__repr__()
 
     def test_phase_init_non_matching_space_group_point_group(self):
-        with pytest.warns(
-            UserWarning, match="Setting space group to 'None', as"
-        ):
+        with pytest.warns(UserWarning, match="Setting space group to 'None', as"):
             _ = ocm.Phase(space_group=225, point_group="432")
 
     @pytest.mark.parametrize(
@@ -282,9 +270,7 @@ class TestPhase:
 
     def test_set_space_group_raises(self):
         space_group = "outer-space"
-        with pytest.raises(
-            ValueError, match=f"'{space_group}' must be of type "
-        ):
+        with pytest.raises(ValueError, match=f"'{space_group}' must be of type "):
             p = ocm.Phase()
             p.space_group = space_group
 
@@ -335,9 +321,7 @@ class TestPhase:
 
         # Getting new structure matrix without passing enough parameters
         # raises an error
-        with pytest.raises(
-            ValueError, match="At least two of x, y, z must be set."
-        ):
+        with pytest.raises(ValueError, match="At least two of x, y, z must be set."):
             _ = new_structure_matrix_from_alignment(lattice.base, x="a")
 
     def test_triclinic_structure_matrix(self):
@@ -433,17 +417,13 @@ class TestPhase:
         # however, Phase should (in many cases) change the basis.
         if np.allclose(structure.lattice.base, phase.structure.lattice.base):
             # In this branch we are in the same basis & all atoms should be the same
-            for atom_from_structure, atom_from_phase in zip(
-                structure, phase.structure
-            ):
+            for atom_from_structure, atom_from_phase in zip(structure, phase.structure):
                 assert np.allclose(atom_from_structure.xyz, atom_from_phase.xyz)
         else:
             # Here we have differing basis, so xyz must disagree for at least some atoms
             disagreement_found = False
 
-            for atom_from_structure, atom_from_phase in zip(
-                structure, phase.structure
-            ):
+            for atom_from_structure, atom_from_phase in zip(structure, phase.structure):
                 if not np.allclose(atom_from_structure.xyz, atom_from_phase.xyz):
                     disagreement_found = True
                     break
@@ -468,9 +448,7 @@ class TestPhase:
         phase1 = ocm.Phase.from_cif(cif_file)
         structure = dst.loadStructure(cif_file)
         phase2 = ocm.Phase(structure=structure)
-        assert np.allclose(
-            phase1.structure.lattice.base, phase2.structure.lattice.base
-        )
+        assert np.allclose(phase1.structure.lattice.base, phase2.structure.lattice.base)
         assert np.allclose(phase1.structure.xyz, phase2.structure.xyz)
 
     @pytest.mark.parametrize(
@@ -1059,9 +1037,7 @@ class TestPhase:
     def test_orthorhombic_classmethod(self):
         out = ocm.Phase.orthorhombic()
         out = ocm.Phase.orthorhombic("aa", space_group=16)
-        out = ocm.Phase.orthorhombic(
-            space_group=dst.spacegroups.GetSpaceGroup(74)
-        )
+        out = ocm.Phase.orthorhombic(space_group=dst.spacegroups.GetSpaceGroup(74))
         out = ocm.Phase.orthorhombic(point_group=osm.D2)
         out = ocm.Phase.orthorhombic(point_group="222")
         with pytest.raises(ValueError):
@@ -1072,9 +1048,7 @@ class TestPhase:
     def test_tetragonal_classmethod(self):
         out = ocm.Phase.tetragonal()
         out = ocm.Phase.tetragonal("aa", space_group=75)
-        out = ocm.Phase.tetragonal(
-            space_group=dst.spacegroups.GetSpaceGroup(142)
-        )
+        out = ocm.Phase.tetragonal(space_group=dst.spacegroups.GetSpaceGroup(142))
         out = ocm.Phase.tetragonal(point_group=osm.D4)
         out = ocm.Phase.tetragonal(point_group="422")
         with pytest.raises(ValueError):
