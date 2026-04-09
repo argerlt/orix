@@ -424,6 +424,523 @@ class Phase:
             f"proper point group: {ppg_name}. color: {self.color}>"
         )
 
+    # ------------------------ #
+    #  Class creation Methods  #
+    # ------------------------ #
+    @classmethod
+    def triclinic(
+        cls,
+        name: str | None = None,
+        space_group: int | SpaceGroup | None = None,
+        point_group: int | str | Symmetry | None = None,
+        color: str | None = None,
+        a: float | None = None,
+        b: float | None = None,
+        c: float | None = None,
+        alpha: float | None = None,
+        beta: float | None = None,
+        gamma: float | None = None,
+    ) -> None:
+        """Create a Phase with a triclinic bravais lattice.
+
+        Parameters
+        ----------
+            name
+                The name to give the Phase.
+
+            space_group
+                Space group describing the symmetry of the Phase. This can
+                either be the integers 1 or 2, corresponding to the two
+                triclinic space group IDs, or a
+                diffpy :class:`~diffpy.structure.spacegroup.SpaceGroup` object.
+                If not given, the space group is set to SG#1 (P1).
+
+            point_group
+                Point group describing the non-translational symmetry of the
+                phase. If not given, the point group is set to C1 ("1").
+
+            color
+                The colour to use when plotting this phase. Default is blue.
+
+            a
+                The unit cell length a (arbitrary units).
+
+            b
+                The unit cell length b (arbitrary units).
+
+            c
+                The unit cell length c (arbitrary units).
+
+            alpha
+                The angle (in degrees) between the b and c axes of the unit cell.
+
+            beta
+                The angle (in degrees) between the a and c axes of the unit cell.
+
+            gamma
+                The angle (in degrees) between the a and b axes of the unit cell.
+
+        Returns
+        -------
+            phase
+                a Phase object with triclinic symmetry
+
+        Notes
+        -----
+        Any missing lattice parameters will be imported from a
+        dictonary of default values, which can be seen using the following
+        snippet:
+
+            >>> import diffpy.structure as dst
+            >>> dst.Lattice(*_default_lattices["triclinic"].abcABG())
+        """
+        if space_group is None and point_group is None:
+            space_group = 1
+        default = _default_lattices["triclinic"].abcABG()
+        given = [a, b, c, alpha, beta, gamma]
+        abcABG = [(j if j is not None else i) for i, j in zip(default, given)]
+        lat = dst.Lattice(*abcABG)
+        phase = cls(
+            name=name,
+            space_group=space_group,
+            point_group=point_group,
+            color=color,
+            structure=dst.Structure(lattice=lat),
+        )
+        if phase.point_group.system != "triclinic":
+            raise ValueError(
+                f"{phase.point_group.name} is not a triclinic symmetry."
+            )
+        return phase
+
+    @classmethod
+    def monoclinic(
+        cls,
+        name: str | Phase | None = None,
+        space_group: int | SpaceGroup | None = None,
+        point_group: int | str | Symmetry | None = None,
+        color: str | None = None,
+        a: float = None,
+        b: float = None,
+        c: float = None,
+        beta: float = None,
+    ) -> None:
+        """Create a Phase with a monoclinic bravais lattice.
+
+        Parameters
+        ----------
+            name
+                The name to give the Phase.
+
+            space_group
+                Space group describing the symmetry of the Phase. This can
+                either be an integer between 2 and 16 corresponding to one
+                of the 13 monoclinic space group IDs, or a
+                diffpy :class:`~diffpy.structure.spacegroup.SpaceGroup` object.
+                If not given, the space group is set to SG#3 (P2).
+
+            point_group
+                Point group describing the non-translational symmetry of the
+                phase. If not given, the point group is set to C2 ("2").
+
+            color
+                The colour to use when plotting this phase. Default is blue.
+
+            a
+                The unit cell length a (arbitrary units).
+
+            b
+                The unit cell length b (arbitrary units).
+
+            c
+                The unit cell length c (arbitrary units).
+
+            beta
+                The angle (in degrees) between the a and c axes of the unit cell.
+
+        Returns
+        -------
+        phase
+            New phase.
+
+        Notes
+        -----
+        Any missing lattice parameters will be imported from a
+        dictonary of default values, which can be seen using the following
+        snippet:
+
+            >>> import diffpy.structure as dst
+            >>> dst.Lattice(*_default_lattices["monoclinic"].abcABG())
+        """
+        if space_group is None and point_group is None:
+            space_group = 3
+        default = _default_lattices["monoclinic"].abcABG()
+        given = [a, b, c, None, beta, None]
+        abcABG = [(j if j is not None else i) for i, j in zip(default, given)]
+        lat = dst.Lattice(*abcABG)
+        phase = cls(
+            name=name,
+            space_group=space_group,
+            point_group=point_group,
+            color=color,
+            structure=dst.Structure(lattice=lat),
+        )
+        if phase.point_group.system != "monoclinic":
+            raise ValueError(
+                f"{phase.point_group.name} is not a monoclinic symmetry."
+            )
+        return phase
+
+    @classmethod
+    def orthorhombic(
+        cls,
+        name: str | Phase | None = None,
+        space_group: int | SpaceGroup | None = None,
+        point_group: int | str | Symmetry | None = None,
+        color: str | None = None,
+        a: float = None,
+        b: float = None,
+        c: float = None,
+    ) -> None:
+        """Create a Phase with an orthorhombic bravais lattice.
+
+        Parameters
+        ----------
+            name
+                The name to give the Phase.
+
+            space_group
+                Space group describing the symmetry of the Phase. This can
+                either be an integer between 15 and 75 corresponding to one
+                of the 59 orthorhombic space group IDs, or a
+                diffpy :class:`~diffpy.structure.spacegroup.SpaceGroup` object.
+                If not given, the space group is set to SG#15 (P222).
+
+            point_group
+                Point group describing the non-translational symmetry of the
+                phase. If not given, the point group is set to D2 ("222").
+
+            color
+                The colour to use when plotting this phase. Default is blue.
+
+            a
+                The unit cell length a (arbitrary units).
+
+            b
+                The unit cell length b (arbitrary units).
+
+            c
+                The unit cell length c (arbitrary units).
+
+        Returns
+        -------
+        phase
+            New phase.
+
+        Notes
+        -----
+        Any missing lattice parameters will be imported from a
+        dictonary of default values, which can be seen using the following
+        snippet:
+
+            >>> import diffpy.structure as dst
+            >>> dst.Lattice(*_default_lattices["orthorhombic"].abcABG())
+        """
+        if space_group is None and point_group is None:
+            space_group = 16
+        default = _default_lattices["orthorhombic"].abcABG()
+        given = [a, b, c, None, None, None]
+        abcABG = [(j if j is not None else i) for i, j in zip(default, given)]
+        lat = dst.Lattice(*abcABG)
+        phase = cls(
+            name=name,
+            space_group=space_group,
+            point_group=point_group,
+            color=color,
+            structure=dst.Structure(lattice=lat),
+        )
+        if phase.point_group.system != "orthorhombic":
+            raise ValueError(
+                f"{phase.point_group.name} is not an orthorhombic symmetry."
+            )
+        return phase
+
+    @classmethod
+    def tetragonal(
+        cls,
+        name: str | Phase | None = None,
+        space_group: int | SpaceGroup | None = None,
+        point_group: int | str | Symmetry | None = None,
+        color: str | None = None,
+        a: float = None,
+        c: float = None,
+    ) -> None:
+        """Create a Phase with a tetragonal bravais lattice.
+
+        Parameters
+        ----------
+            name
+                The name to give the Phase.
+
+            space_group
+                Space group describing the symmetry of the Phase. This can
+                either be an integer between 74 and 143 corresponding to one
+                of the 68 tetragonal space group IDs, or a
+                diffpy :class:`~diffpy.structure.spacegroup.SpaceGroup` object.
+                If not given, the space group is set to SG#75 (P4).
+
+            point_group
+                Point group describing the non-translational symmetry of the
+                phase. If not given, the point group is set to C4 ("4").
+
+            color
+                The colour to use when plotting this phase. Default is blue.
+
+            a
+                The unit cell length a (arbitrary units).
+
+            c
+                The unit cell length c (arbitrary units).
+
+        Returns
+        -------
+        phase
+            New phase.
+
+        Notes
+        -----
+        Any missing lattice parameters will be imported from a
+        dictonary of default values, which can be seen using the following
+        snippet:
+
+            >>> import diffpy.structure as dst
+            >>> dst.Lattice(*_default_lattices["tetragonal"].abcABG())
+        """
+        if space_group is None and point_group is None:
+            space_group = 75
+        default = _default_lattices["tetragonal"].abcABG()
+        given = [a, a, c, None, None, None]
+        abcABG = [(j if j is not None else i) for i, j in zip(default, given)]
+        lat = dst.Lattice(*abcABG)
+        phase = cls(
+            name=name,
+            space_group=space_group,
+            point_group=point_group,
+            color=color,
+            structure=dst.Structure(lattice=lat),
+        )
+        if phase.point_group.system != "tetragonal":
+            raise ValueError(
+                f"{phase.point_group.name} is not a tetragonal symmetry."
+            )
+        return phase
+
+    @classmethod
+    def trigonal(
+        cls,
+        name: str | Phase | None = None,
+        space_group: int | SpaceGroup | None = None,
+        point_group: int | str | Symmetry | None = None,
+        color: str | None = None,
+        a: float = None,
+        alpha: float = None,
+    ) -> None:
+        """Create a Phase with trigonal (rhombohedral) bravais lattice.
+
+        Parameters
+        ----------
+            name
+                The name to give the Phase.
+
+            space_group
+                Space group describing the symmetry of the Phase. This can
+                either be an integer between 142 and 168 corresponding to one
+                of the 25 trigonal space group IDs, or a
+                diffpy :class:`~diffpy.structure.spacegroup.SpaceGroup` object.
+                If not given, the space group is set to SG#143 (P3).
+
+            point_group
+                Point group describing the non-translational symmetry of the
+                phase. If not given, the point group is set to C3 ("3").
+
+            color
+                The colour to use when plotting this phase. Default is blue.
+
+            a
+                The unit cell length a (arbitrary units).
+
+            alpha
+                The angle (in degrees) between the b and c axes of the unit cell.
+
+        Returns
+        -------
+        phase
+            New phase.
+
+        Notes
+        -----
+        Any missing lattice parameters will be imported from a
+        dictonary of default values, which can be seen using the following
+        snippet:
+
+            >>> import diffpy.structure as dst
+            >>> dst.Lattice(*_default_lattices["trigonal"].abcABG())
+        """
+        if space_group is None and point_group is None:
+            space_group = 143
+        default = _default_lattices["trigonal"].abcABG()
+        given = [a, a, a, alpha, alpha, alpha]
+        abcABG = [(j if j is not None else i) for i, j in zip(default, given)]
+        lat = dst.Lattice(*abcABG)
+        phase = cls(
+            name=name,
+            space_group=space_group,
+            point_group=point_group,
+            color=color,
+            structure=dst.Structure(lattice=lat),
+        )
+        if phase.point_group.system != "trigonal":
+            raise ValueError(
+                f"{phase.point_group.name} is not a trigonal (rhombohedral) symmetry."
+            )
+        return phase
+
+    @classmethod
+    def hexagonal(
+        cls,
+        name: str | Phase | None = None,
+        space_group: int | SpaceGroup | None = None,
+        point_group: int | str | Symmetry | None = None,
+        color: str | None = None,
+        a: float = None,
+        c: float = None,
+    ) -> None:
+        """Create a Phase with a hexagonal bravais lattice.
+
+        Parameters
+        ----------
+            name
+                The name to give the Phase.
+
+            space_group
+                Space group describing the symmetry of the Phase. This can
+                either be an integer between 167 and 195 corresponding to one
+                of the 27 hexagonal space group IDs, or a
+                diffpy :class:`~diffpy.structure.spacegroup.SpaceGroup` object.
+                If not given, the space group is set to SG#168 (P6).
+
+            point_group
+                Point group describing the non-translational symmetry of the
+                phase. If not given, the point group is set to C6 ("6").
+
+            color
+                The colour to use when plotting this phase. Default is blue.
+
+            a
+                The unit cell length a (arbitrary units).
+
+            c
+                The unit cell length c (arbitrary units).
+
+        Returns
+        -------
+        phase
+            New phase.
+
+        Notes
+        -----
+        Any missing lattice parameters will be imported from a
+        dictonary of default values, which can be seen using the following
+        snippet:
+
+            >>> import diffpy.structure as dst
+            >>> dst.Lattice(*_default_lattices["hexagonal"].abcABG())
+        """
+        if space_group is None and point_group is None:
+            space_group = 168
+        default = _default_lattices["hexagonal"].abcABG()
+        given = [a, a, c, None, None, None]
+        abcABG = [(j if j is not None else i) for i, j in zip(default, given)]
+        lat = dst.Lattice(*abcABG)
+        phase = cls(
+            name=name,
+            space_group=space_group,
+            point_group=point_group,
+            color=color,
+            structure=dst.Structure(lattice=lat),
+        )
+        if phase.point_group.system != "hexagonal":
+            raise ValueError(
+                f"{phase.point_group.name} is not a hexagonal symmetry."
+            )
+        return phase
+
+    @classmethod
+    def cubic(
+        cls,
+        name: str | Phase | None = None,
+        space_group: int | SpaceGroup | None = None,
+        point_group: int | str | Symmetry | None = None,
+        color: str | None = None,
+        a: float = None,
+    ) -> None:
+        """Create a Phase with a cubic bravais lattice.
+
+        Parameters
+        ----------
+            name
+                The name to give the Phase.
+
+            space_group
+                Space group describing the symmetry of the Phase. This can
+                either be an integer between 194 and 231 corresponding to one
+                of the 36 cubic space group IDs, or a
+                diffpy :class:`~diffpy.structure.spacegroup.SpaceGroup` object.
+                If not given, the space group is set to SG#195 (P23).
+
+            point_group
+                Point group describing the non-translational symmetry of the
+                phase. If not given, the point group is set to T ("23").
+
+            color
+                The colour to use when plotting this phase. Default is blue.
+
+            a
+                The unit cell length a (arbitrary units).
+
+        Returns
+        -------
+        phase
+            New phase.
+
+        Notes
+        -----
+        Any missing lattice parameters will be imported from a
+        dictonary of default values, which can be seen using the following
+        snippet:
+
+            >>> import diffpy.structure as dst
+            >>> dst.Lattice(*_default_lattices["cubic"].abcABG())
+        """
+        if space_group is None and point_group is None:
+            space_group = 195
+        default = _default_lattices["cubic"].abcABG()
+        given = [a, a, a, None, None, None]
+        abcABG = [(j if j is not None else i) for i, j in zip(default, given)]
+        lat = dst.Lattice(*abcABG)
+        phase = cls(
+            name=name,
+            space_group=space_group,
+            point_group=point_group,
+            color=color,
+            structure=dst.Structure(lattice=lat),
+        )
+        if phase.point_group.system != "cubic":
+            raise ValueError(
+                f"{phase.point_group.name} is not a cubic symmetry."
+            )
+        return phase
+
     @classmethod
     def from_cif(cls, filename: str | Path) -> Phase:
         r"""Create a Phase from a Crystallographic Information File (CIF).
