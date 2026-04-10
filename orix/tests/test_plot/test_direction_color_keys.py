@@ -44,10 +44,12 @@ class TestDirectionColorKeyTSL:
         rgb_key = ckey_oh.direction_color_key
 
         # Check Vector3ds and Millers as inputs
-        rgb = rgb_key.direction2color(direction=v)
-        rgb = rgb_key.direction2color(direction=m1)
+        rgb1 = rgb_key.direction2color(direction=v)
+        rgb2 = rgb_key.direction2color(direction=m1)
+        assert np.allclose(rgb1, rgb2)
+
         with pytest.raises(ValueError, match="'direction' has a Laue group"):
-            rgb = rgb_key.direction2color(direction=m2)
+            rgb_key.direction2color(direction=m2)
 
     def test_triclinic(self):
         # Get RGB colors for C1. Will never reach from IPFColorKeyTSL

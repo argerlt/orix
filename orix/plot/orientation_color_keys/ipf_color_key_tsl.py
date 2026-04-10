@@ -56,15 +56,15 @@ class IPFColorKeyTSL(IPFColorKey):
         if direction is not None:
             if isinstance(direction, Miller):
                 raise ValueError(
-                    "The Viewing direction must a real space vector (Vector3d), not a cystal vector (Miller)"
+                    "The sample direction must be a sample vector, not a crystal vector"
                 )
             if not isinstance(direction, Vector3d):
                 try:
                     direction = Vector3d(np.asanyarray(direction))
-                except:
-                    raise ValueError("'direction' cannot be interpreted as a Vector3d")
+                except DimensionError as err:
+                    raise ValueError("'direction' cannot be interpreted as a Vector3d") from err
             if direction.size != 1:
-                raise ValueError("'direction' only accepts a single vector as an input")
+                raise ValueError("Only one sample direction can be given")
         super().__init__(symmetry.laue, direction=direction)
 
     @property

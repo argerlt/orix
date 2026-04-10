@@ -25,8 +25,7 @@ Deprecated
 Fixed
 -----
 - ``DirectionColorKeyTSL.direction2color`` accepts ``Miller`` crystal vectors as inputs in addition to ``Vector3d``.
-- ``IPFColorKeyTSL`` will now only accept a single ``Vector3D`` as the `direction` setting
-   during creation.
+- ``IPFColorKeyTSL`` now only accepts a single ``Vector3d`` as the ``direction``.
 
 
 2026-02-24 - version 0.14.2
