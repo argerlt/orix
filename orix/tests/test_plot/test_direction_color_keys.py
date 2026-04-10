@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 import orix.crystal_map as ocm
-from orix.plot import IPFColorKeyTSL
+from orix.plot import IPFColorKeyTSL, DirectionColorKeyTSL
 from orix.plot.direction_color_keys._util import polar_coordinates_in_sector
 import orix.quaternion.symmetry as osm
 import orix.vector as ove
@@ -29,7 +29,7 @@ import orix.vector as ove
 
 class TestDirectionColorKeyTSL:
     def test_direction2color(self):
-        ckey_oh = IPFColorKeyTSL(osm.Oh)
+        ckey_oh = DirectionColorKeyTSL(osm.Oh)
         ckey_oh_direction = ckey_oh.direction_color_key
         assert repr(ckey_oh_direction) == "DirectionColorKeyTSL, symmetry m-3m"
 

@@ -69,7 +69,7 @@ class DirectionColorKeyTSL(DirectionColorKey):
         """
         if isinstance(direction, Miller):
             h_laue = direction.phase.point_group.laue.name
-            if h_laue == self.symmetry.name:
+            if direction.phase.point_group.laue == self.symmetry:
                 direction = Vector3d(direction)
             else:
                 raise ValueError(

@@ -30,29 +30,40 @@ from orix.vector import Miller, Vector3d
 
 
 class IPFColorKeyTSL(IPFColorKey):
-    """Assign colors to crystal directions rotated by crystal
-    orientations and projected into an inverse pole figure, according to
-    the Laue symmetry of the crystal.
+    """Assigns colors to orientations in a symmetry-aware manner.
 
-    This is based on the TSL color key implemented in MTEX.
+    IPF color keys work by defining symmetry-specific color maps
+    that convert every orientation into a color. Images such as EBSD
+    maps can then be colored based on the crystal vector aligned with
+    a queried sample direction. For the simple case where the sample
+    direction is aligned with the viewing direction, this is akin to
+    asking "what color is the crystal vector pointing out of the screen
+    at me."
+
+    Parameters
+    ----------
+    symmetry
+        Crystal symmetry used to define the colormap. If symmetry
+        is not a Laue Symmetry, the equivalent Laue symmetry will
+        be used instead.
+    direction
+        Sample direction. If not given, sample Z direction (out of
+        plane) is used.
+
+    Notes
+    -----
+    The TSL colormaps map only the 11 Laue classes, as they can all
+    be described as weighted combinations of red, green, and blue. For
+    details on this map as well as options for less limiting alternative
+    mappings, refer to "Orientations, Perfectly Colored"
+    https://doi.org/10.1107/S1600576716012942
     """
 
-    def __init__(self, symmetry: Symmetry, direction: Vector3d | None = None) -> None:
-        """Create an inverse pole figure (IPF) color key to color
-        orientations according a sample direction and a Laue symmetry's
-        fundamental sector (IPF).
-
-        Parameters
-        ----------
-        symmetry : orix.quaternion.Symmetry
-            (Laue) symmetry of the crystal. If a non-Laue symmetry
-            is given, the Laue symmetry of that symmetry will be used.
-        direction : orix.vector.Vector3d, optional
-            Viewing direction the defines the IPF coloring. for the TSL
-            colormap, this defines the fiber of orientations that will be
-            colored red. If no value is given, the z axis (ie, out of plane)
-            is used.
-        """
+    def __init__(
+        self,
+        symmetry: Symmetry,
+        direction: Vector3d | list | tuple | None = None,
+    ) -> None:
         if direction is not None:
             if isinstance(direction, Miller):
                 raise ValueError(
@@ -61,8 +72,10 @@ class IPFColorKeyTSL(IPFColorKey):
             if not isinstance(direction, Vector3d):
                 try:
                     direction = Vector3d(np.asanyarray(direction))
-                except DimensionError as err:
-                    raise ValueError("'direction' cannot be interpreted as a Vector3d") from err
+                except:
+                    raise ValueError(
+                        "'direction' cannot be interpreted as a Vector3d"
+                    )
             if direction.size != 1:
                 raise ValueError("Only one sample direction can be given")
         super().__init__(symmetry.laue, direction=direction)
