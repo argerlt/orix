@@ -12,18 +12,27 @@ its best to adhere to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>
 
 Added
 -----
+- Phases can be defined using lattice-based class methods, such as ``Phase.cubic``
 - Non-lazy computation of dot products with
   ``Misorientation.get_distance_matrix(lazy=True)``.
   Currently opt-in, but will be the default in the next minor version.
 
 Changed
 -------
+- The symmetry-dependent default lattice parameters in ``Phase.structure`` have
+  been changed to crystallographically possible values.
 - ``Miller.get_nearest()`` now raises a ``NotImplementedError`` rather than returning
   ``NotImplemented``.
 - ``Mille.mean(use_symmetry=True)`` now raises a ``NotImplementedError`` rather than
   returning ``NotImplemented``.
 - Improved (faster and using less memory) non-lazy computation of misorientation angles
   from ``Orientation.with_angle_outer()``.
+
+Removed
+-------
+
+Deprecated
+----------
 
 Fixed
 -----
