@@ -40,8 +40,7 @@ from orix.quaternion.symmetry import (
     T,
     O,
     Oh,
-    _groups,
-    _proper_groups,
+    _symm_lists,
 )
 
 # isort: on
@@ -92,11 +91,11 @@ def test_quaternion_subclasses_copy_constructor_casting():
         # 7pi/12 -C2-> # 7pi/12
         ([(0.6088, 0, 0, 0.7934)], C2, [(-0.7934, 0, 0, 0.6088)]),
         # 7pi/12 -C3-> # 7pi/12
-        ([(0.6088, 0, 0, 0.7934)], C3, [(-0.9914, 0, 0, 0.1305)]),
+        ([(0.6088, 0, 0, 0.7934)], C3, [(0.9914, 0, 0, -0.1305)]),
         # 7pi/12 -C4-> # pi/12
-        ([(0.6088, 0, 0, 0.7934)], C4, [(-0.9914, 0, 0, -0.1305)]),
+        ([(0.6088, 0, 0, 0.7934)], C4, [(0.9914, 0, 0, 0.1305)]),
         # 7pi/12 -O-> # pi/12
-        ([(0.6088, 0, 0, 0.7934)], O, [(-0.9914, 0, 0, -0.1305)]),
+        ([(0.6088, 0, 0, 0.7934)], O, [(0.9914, 0, 0, 0.1305)]),
     ],
     indirect=["orientation"],
 )
@@ -292,7 +291,8 @@ def test_symmetry_property_wrong_type_orientation():
 
 
 @pytest.mark.parametrize(
-    "error_type, value", [(ValueError, (1, 2)), (ValueError, (C1, 2)), (TypeError, 1)]
+    "error_type, value",
+    [(ValueError, (1, 2)), (ValueError, (C1, 2)), (TypeError, 1)],
 )
 def test_symmetry_property_wrong_type_misorientation(error_type, value):
     mori = Misorientation.random((3, 2))
@@ -304,7 +304,9 @@ def test_symmetry_property_wrong_type_misorientation(error_type, value):
     "error_type, value",
     [(ValueError, (C1,)), (ValueError, (C1, C2, C1))],
 )
-def test_symmetry_property_wrong_number_of_values_misorientation(error_type, value):
+def test_symmetry_property_wrong_number_of_values_misorientation(
+    error_type, value
+):
     o = Misorientation.random((3, 2))
     with pytest.raises(error_type, match="Value must be a 2-tuple"):
         # less than 2 Symmetry
@@ -412,7 +414,7 @@ class TestMisorientation:
         angle2 = m.get_distance_matrix(chunk_size=10, progressbar=False)
         assert np.allclose(angle1, angle2)
 
-    @pytest.mark.parametrize("symmetry", _groups[:-1])
+    @pytest.mark.parametrize("symmetry", _symm_lists["permutations"][:-1])
     def test_get_distance_matrix_equal_explicit_calculation(self, symmetry):
         # do not test Oh, as this takes ~4 GB
         m = Misorientation.random((5,))
@@ -684,7 +686,9 @@ class TestOrientation:
         o = Orientation(abcd)
 
         angle1 = o.get_distance_matrix(lazy=True, chunk_size=5)
-        angle2 = o.get_distance_matrix(lazy=True, chunk_size=10, progressbar=False)
+        angle2 = o.get_distance_matrix(
+            lazy=True, chunk_size=10, progressbar=False
+        )
 
         assert np.allclose(angle1.data, angle2.data)
 
@@ -770,7 +774,9 @@ class TestOrientation:
         )
         assert (fig_axangle.get_size_inches() == fig_size).all()
         assert isinstance(fig_axangle.axes[0], AxAnglePlot)
-        fig_rodrigues = orientation.scatter(projection="rodrigues", return_figure=True)
+        fig_rodrigues = orientation.scatter(
+            projection="rodrigues", return_figure=True
+        )
         assert isinstance(fig_rodrigues.axes[0], RodriguesPlot)
 
         # Add multiple axes to figure, one at a time
@@ -860,10 +866,12 @@ class TestOrientation:
                 (-0.3874, 0.6708, -0.1986, 0.6004),
             )
         )
-        for pg in _proper_groups:
+        for pg in _symm_lists["proper_permutations"]:
             ori.symmetry = pg
             region = np.radians(pg.euler_fundamental_region)
-            assert np.all(np.max(ori.in_euler_fundamental_region(), axis=0) <= region)
+            assert np.all(
+                np.max(ori.in_euler_fundamental_region(), axis=0) <= region
+            )
 
     def test_from_path_ends(self):
         # generate paths with orientations to check symmetry copying
