@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -21,17 +21,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
-from diffpy.structure.spacegroups import GetSpaceGroup
+import diffpy.structure as dst
 import matplotlib.figure as mfigure
 import numpy as np
 
-from orix.quaternion.rotation import Rotation
-from orix.vector.vector3d import Vector3d
+import orix.quaternion as oqu
+import orix.vector as ove
 
 if TYPE_CHECKING:  # pragma: no cover
     from orix.quaternion.orientation import Orientation
     from orix.vector.fundamental_sector import FundamentalSector
-
 
 VALID_SYSTEMS = Literal[
     "triclinic",
@@ -44,7 +43,7 @@ VALID_SYSTEMS = Literal[
 ]
 
 
-class Symmetry(Rotation):
+class Symmetry(oqu.Rotation):
     r"""The set of rotations comprising a point group.
 
     An object's symmetry can be characterized by the transformations
@@ -85,19 +84,48 @@ class Symmetry(Rotation):
 
     @property
     def subgroups(self) -> list[Symmetry]:
-        """Return the list groups that are subgroups of this group."""
-        return [g for g in _groups if g._tuples <= self._tuples]
+        """Return all the crystal symmetry subgroups.
+
+        There are 32 distinct crystal groups possible for a infinitely
+        repeating lattice of unit cells. These groups decompose into 37
+        unique subgroups, which include the rotations and rotoinversions
+        around non-primary axes. ie, a two-fold rotation around the
+        z axis (C2z) is considered distinct form a two-fold rotation
+        around the x axis (C2x).
+
+        This function returns the subset of those 37 groups that are
+        fully contained within this symmetry.
+        """
+        groups = _symm_lists["permutations"]
+        return [g for g in groups if g._tuples <= self._tuples]
 
     @property
     def proper_subgroups(self) -> list[Symmetry]:
-        """Return the list of proper groups that are subgroups of this
-        group.
+        """Return all the proper crystal symmetry subgroups.
+
+        There are 32 distinct crystal groups possible for a infinitely
+        repeating lattice of unit cells. These groups decompose into 37
+        unique subgroups, which include the rotations and rotoinversions
+        around non-primary axes. ie, a two-fold rotation around the
+        z axis (C2z) is considered distinct form a two-fold rotation
+        around the x axis (C2x) for the purpose of this definition.
+
+        Of these 37 groups, 14 contain only purely rotational
+        (ie "proper") elements.
+
+        This function returns the subset of those 14 groups that are
+        fully contained within this symmetry.
         """
         return [g for g in self.subgroups if g.is_proper]
 
     @property
     def proper_subgroup(self) -> Symmetry:
-        """Return the largest proper group of this subgroup."""
+        """Return the largest proper subgroup.
+
+        In this context, 'largest' is the subgroup containing the
+        most elements. for details on how proper subgroups are defined,
+        refer to :func:`orix.quaternion.symmetry.Symmetry.proper_subgroups`
+        """
         subgroups = self.proper_subgroups
         if len(subgroups) == 0:
             return Symmetry(self)
@@ -107,35 +135,47 @@ class Symmetry(Rotation):
 
     @property
     def laue(self) -> Symmetry:
-        """Return this group plus inversion."""
+        """Return this symmetry combined with an inversion operation.
+
+        The subset of cyrstal symmetries containing inversion points
+        are called Laue groups. This function calculates every unique
+        element possible from permutations of this group with the
+        inversion operation, and returns the Laue group matching the
+        result.
+        """
         laue = Symmetry.from_generators(self, Ci)
         laue.name = _get_laue_group_name(self.name)
         return laue
 
     @property
     def laue_proper_subgroup(self) -> Symmetry:
-        """Return the proper subgroup of this group plus inversion."""
+        """Return the largest proper subgroup of the Laue group.
+
+        Refer to :func:`orix.quaternion.symmetry.Symmetry.laue` for a
+        proper definition of Laue groups. This function finds the
+        appropriate Laue group and returns it's largest subgroup
+        containing only rotational elements.
+        """
         return self.laue.proper_subgroup
 
     @property
     def contains_inversion(self) -> bool:
-        """Return whether this group contains inversion."""
+        """Return whether this group contains an inversion element."""
         return Ci._tuples <= self._tuples
 
     @property
-    def diads(self) -> Vector3d:
+    def diads(self) -> ove.Vector3d:
         """Return the diads of this symmetry."""
         axis_orders = self.get_axis_orders()
         diads = [ao for ao in axis_orders if axis_orders[ao] == 2]
         if len(diads) == 0:
-            return Vector3d.empty()
+            return ove.Vector3d.empty()
         else:
-            return Vector3d.stack(diads).flatten()
+            return ove.Vector3d.stack(diads).flatten()
 
     @property
     def euler_fundamental_region(self) -> tuple[int, int, int]:
-        r"""Return the fundamental Euler angle region of the proper
-        subgroup.
+        r"""Return the fundamental Euler region of the proper subgroup.
 
         Returns
         -------
@@ -173,7 +213,9 @@ class Symmetry(Rotation):
 
     @property
     def system(self) -> VALID_SYSTEMS | None:
-        """Return which of the seven crystal systems this symmetry
+        """Return the crystal system.
+
+        Return which of the seven crystal systems this symmetry
         belongs to, or None if the symmetry name is not recognized.
         """
         name = self.name
@@ -197,13 +239,15 @@ class Symmetry(Rotation):
     @property
     def _tuples(self) -> set:
         """Return the differentiators of this group."""
-        s = Rotation(self.flatten())
+        s = oqu.Rotation(self.flatten())
         tuples = set([tuple(d) for d in s._differentiators()])
         return tuples
 
     @property
     def fundamental_sector(self) -> "FundamentalSector":
-        """Return the fundamental sector describing the inverse pole
+        """Return the fundamental sector.
+
+        Return the fundamental sector describing the inverse pole
         figure given by the point group name.
 
         These sectors are taken from MTEX'
@@ -213,25 +257,26 @@ class Symmetry(Rotation):
         from orix.vector import FundamentalSector
 
         name = self.name
-        vx = Vector3d.xvector()
-        vy = Vector3d.yvector()
-        vz = Vector3d.zvector()
+        vx = ove.Vector3d.xvector()
+        vy = ove.Vector3d.yvector()
+        vz = ove.Vector3d.zvector()
 
         # Map everything on the northern hemisphere if there is an
         # inversion or some symmetry operation not parallel to Z
         if any(vz.angle_with(self.outer(vz)) > np.pi / 2):
             n = vz
         else:
-            n = Vector3d.empty()
+            n = ove.Vector3d.empty()
 
         # Region on the northern hemisphere depends just on the number
         # of symmetry operations
         if self.size > 1 + n.size:
             angle = 2 * np.pi * (1 + n.size) / self.size
-            new_v = Vector3d.from_polar(
-                azimuth=[np.pi / 2, angle - np.pi / 2], polar=[np.pi / 2, np.pi / 2]
+            new_v = ove.Vector3d.from_polar(
+                azimuth=[np.pi / 2, angle - np.pi / 2],
+                polar=[np.pi / 2, np.pi / 2],
             )
-            n = Vector3d(np.vstack([n.data, new_v.data]))
+            n = ove.Vector3d(np.vstack([n.data, new_v.data]))
 
         # We only set the center "by hand" for T (23), Th (m-3) and O
         # (432), since the UV S2 sampling isn't uniform enough to
@@ -255,17 +300,19 @@ class Symmetry(Rotation):
         elif name == "-42m":
             n = n.rotate(angle=-np.pi / 4)
         elif name == "23":
-            n = Vector3d([[1, 1, 0], [1, -1, 0], [0, -1, 1], [0, 1, 1]])
+            n = ove.Vector3d([[1, 1, 0], [1, -1, 0], [0, -1, 1], [0, 1, 1]])
             # Taken from MTEX
-            center = Vector3d([0.707558, -0.000403, 0.706655])
+            center = ove.Vector3d([0.707558, -0.000403, 0.706655])
         elif name in ["m-3", "432"]:
-            n = Vector3d(np.vstack([vx.data, [0, -1, 1], [-1, 0, 1], vy.data, vz.data]))
+            n = ove.Vector3d(
+                np.vstack([vx.data, [0, -1, 1], [-1, 0, 1], vy.data, vz.data])
+            )
             # Taken from MTEX
-            center = Vector3d([0.349928, 0.348069, 0.869711])
+            center = ove.Vector3d([0.349928, 0.348069, 0.869711])
         elif name == "-43m":
-            n = Vector3d([[1, -1, 0], [1, 1, 0], [-1, 0, 1]])
+            n = ove.Vector3d([[1, -1, 0], [1, 1, 0], [-1, 0, 1]])
         elif name == "m-3m":
-            n = Vector3d(np.vstack([[1, -1, 0], [-1, 0, 1], vy.data]))
+            n = ove.Vector3d(np.vstack([[1, -1, 0], [-1, 0, 1], vy.data]))
 
         fs = FundamentalSector(n).flatten().unique()
         fs._center = center
@@ -274,8 +321,7 @@ class Symmetry(Rotation):
 
     @property
     def _primary_axis_order(self) -> int | None:
-        """Return the order of primary rotation axis for the proper
-        subgroup.
+        """Return the order of primary proper rotation axis.
 
         Used in to map Euler angles into the fundamental region in
         :meth:`~orix.quaternion.Orientation.in_euler_fundamental_region`.
@@ -290,9 +336,9 @@ class Symmetry(Rotation):
         name = self.proper_subgroup.name
         if name in ["1", "211", "121"]:
             return 1
-        elif name in ["112", "222", "23"]:
+        elif name in ["112", "222", "23", "2"]:
             return 2
-        elif name in ["3", "312", "32"]:
+        elif name in ["3", "312", "321", "32"]:
             return 3
         elif name in ["4", "422", "432"]:
             return 4
@@ -302,7 +348,7 @@ class Symmetry(Rotation):
             return None
 
     @property
-    def _special_rotation(self) -> Rotation:
+    def _special_rotation(self) -> oqu.Rotation:
         """Symmetry operations of the proper subgroup different from
         rotation about the c-axis.
 
@@ -319,15 +365,15 @@ class Symmetry(Rotation):
             name is not recognized.
         """
 
-        def symmetry_axis(v: Vector3d, n: int) -> Rotation:
+        def symmetry_axis(v: ove.Vector3d, n: int) -> oqu.Rotation:
             angles = np.linspace(0, 2 * np.pi, n, endpoint=False)
-            return Rotation.from_axes_angles(v, angles)
+            return oqu.Rotation.from_axes_angles(v, angles)
 
         # Symmetry axes
-        vx = Vector3d.xvector()
-        mirror = Vector3d((1, -1, 0))
-        axis110 = Vector3d((1, 1, 0))
-        axis111 = Vector3d((1, 1, 1))
+        vx = ove.Vector3d.xvector()
+        mirror = ove.Vector3d((1, -1, 0))
+        axis110 = ove.Vector3d((1, 1, 0))
+        axis111 = ove.Vector3d((1, 1, 1))
 
         name = self.proper_subgroup.name
         if name in ["1", "211", "121"]:
@@ -352,7 +398,7 @@ class Symmetry(Rotation):
                 # Combined with two-fold rotation about [110]
                 rot = rot.outer(symmetry_axis(-axis110, 2))
         else:
-            rot = Rotation.identity((1,))
+            rot = oqu.Rotation.identity((1,))
 
         return rot.flatten()
 
@@ -367,14 +413,15 @@ class Symmetry(Rotation):
         return Symmetry.from_generators(*generators)
 
     def __hash__(self) -> int:
-        return hash(self.name.encode() + self.data.tobytes() + self.improper.tobytes())
+        return hash(
+            self.name.encode() + self.data.tobytes() + self.improper.tobytes()
+        )
 
     # ------------------------ Class methods ------------------------- #
 
     @classmethod
-    def from_generators(cls, *generators: Rotation) -> Symmetry:
-        """Create a Symmetry from a minimum list of generating
-        transformations.
+    def from_generators(cls, *generators: oqu.Rotation) -> Symmetry:
+        """Create a Symmetry from a list of generating transforms.
 
         Parameters
         ----------
@@ -419,35 +466,39 @@ class Symmetry(Rotation):
 
     # --------------------- Other public methods --------------------- #
 
-    def get_axis_orders(self) -> dict[Vector3d, int]:
+    def get_axis_orders(self) -> dict[ove.Vector3d, int]:
+        """Return a dictionary of every rotation axis and it's order
+        (ie, folds)"""
         s = self[self.angle > 0]
         if s.size == 0:
             return {}
         return {
-            Vector3d(a): b + 1
+            ove.Vector3d(a): b + 1
             for a, b in zip(*np.unique(s.axis.data, axis=0, return_counts=True))
         }
 
-    def get_highest_order_axis(self) -> tuple[Vector3d, np.ndarray]:
+    def get_highest_order_axis(self) -> tuple[ove.Vector3d, np.ndarray]:
+        """Return the highest order rotational axis and it's order
+        (ie, folds)"""
         axis_orders = self.get_axis_orders()
         if len(axis_orders) == 0:
-            return Vector3d.zvector(), np.inf
+            return ove.Vector3d.zvector(), np.inf
         highest_order = max(axis_orders.values())
-        axes = Vector3d.stack(
+        axes = ove.Vector3d.stack(
             [ao for ao in axis_orders if axis_orders[ao] == highest_order]
         ).flatten()
         return axes, highest_order
 
-    def fundamental_zone(self) -> Vector3d:
+    def fundamental_zone(self) -> ove.Vector3d:
         from orix.vector import SphericalRegion
 
         symmetry = self.antipodal
         symmetry = symmetry[symmetry.angle > 0]
         axes, order = symmetry.get_highest_order_axis()
         if order > 6:
-            return Vector3d.empty()
-        axis = Vector3d.zvector().get_nearest(axes, inclusive=True)
-        r = Rotation.from_axes_angles(axis, 2 * np.pi / order)
+            return ove.Vector3d.empty()
+        axis = ove.Vector3d.zvector().get_nearest(axes, inclusive=True)
+        r = oqu.Rotation.from_axes_angles(axis, 2 * np.pi / order)
 
         diads = symmetry.diads
         nearest_diad = axis.get_nearest(diads)
@@ -457,18 +508,18 @@ class Symmetry(Rotation):
         n1 = axis.cross(nearest_diad).unit
         n2 = -(r * n1)
         next_diad = r * nearest_diad
-        n = Vector3d.stack((n1, n2)).flatten()
+        n = ove.Vector3d.stack((n1, n2)).flatten()
         sr = SphericalRegion(n.unique())
         inside = symmetry[symmetry.axis < sr]
         if inside.size == 0:
             return sr
         axes, order = inside.get_highest_order_axis()
         axis = axis.get_nearest(axes)
-        r = Rotation.from_axes_angles(axis, 2 * np.pi / order)
+        r = oqu.Rotation.from_axes_angles(axis, 2 * np.pi / order)
         nearest_diad = next_diad
         n1 = axis.cross(nearest_diad).unit
         n2 = -(r * n1)
-        n = Vector3d(np.concatenate((n.data, n1.data, n2.data)))
+        n = ove.Vector3d(np.concatenate((n.data, n1.data, n2.data)))
         sr = SphericalRegion(n.unique())
         return sr
 
@@ -512,8 +563,10 @@ class Symmetry(Rotation):
         if orientation is None:
             # orientation chosen to mimic stereographic projections as
             # shown: http://xrayweb.chem.ou.edu/notes/symmetry.html
-            orientation = Rotation.from_axes_angles((-1, 8, 1), np.deg2rad(65))
-        if not isinstance(orientation, Rotation):
+            orientation = oqu.Rotation.from_axes_angles(
+                (-1, 8, 1), np.deg2rad(65)
+            )
+        if not isinstance(orientation, oqu.Rotation):
             raise TypeError("Orientation must be a Rotation instance.")
         orientation = self.outer(orientation)
 
@@ -525,7 +578,7 @@ class Symmetry(Rotation):
         reproject_scatter_kwargs.setdefault("marker", "+")
         reproject_scatter_kwargs.setdefault("label", "lower")
 
-        v = orientation * Vector3d.zvector()
+        v = orientation * ove.Vector3d.zvector()
 
         figure = v.scatter(
             return_figure=True,
@@ -1019,7 +1072,7 @@ _symm_lists = {
 }
 
 
-def get_distinguished_points(s1: Symmetry, s2: Symmetry = C1) -> Rotation:
+def get_distinguished_points(s1: Symmetry, s2: Symmetry = C1) -> oqu.Rotation:
     """Return points symmetrically equivalent to identity with respect
     to ``s1`` and ``s2``.
 
@@ -1111,7 +1164,7 @@ def get_point_group(space_group_number: int, proper: bool = False) -> Symmetry:
     >>> pgO.name
     '432'
     """
-    spg = GetSpaceGroup(space_group_number)
+    spg = dst.spacegroups.GetSpaceGroup(space_group_number)
     pgn = spg.point_group_name
     if proper:
         return spacegroup2pointgroup_dict[pgn]["proper"]
