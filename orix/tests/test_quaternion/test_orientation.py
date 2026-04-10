@@ -304,9 +304,7 @@ def test_symmetry_property_wrong_type_misorientation(error_type, value):
     "error_type, value",
     [(ValueError, (C1,)), (ValueError, (C1, C2, C1))],
 )
-def test_symmetry_property_wrong_number_of_values_misorientation(
-    error_type, value
-):
+def test_symmetry_property_wrong_number_of_values_misorientation(error_type, value):
     o = Misorientation.random((3, 2))
     with pytest.raises(error_type, match="Value must be a 2-tuple"):
         # less than 2 Symmetry
@@ -686,9 +684,7 @@ class TestOrientation:
         o = Orientation(abcd)
 
         angle1 = o.get_distance_matrix(lazy=True, chunk_size=5)
-        angle2 = o.get_distance_matrix(
-            lazy=True, chunk_size=10, progressbar=False
-        )
+        angle2 = o.get_distance_matrix(lazy=True, chunk_size=10, progressbar=False)
 
         assert np.allclose(angle1.data, angle2.data)
 
@@ -774,9 +770,7 @@ class TestOrientation:
         )
         assert (fig_axangle.get_size_inches() == fig_size).all()
         assert isinstance(fig_axangle.axes[0], AxAnglePlot)
-        fig_rodrigues = orientation.scatter(
-            projection="rodrigues", return_figure=True
-        )
+        fig_rodrigues = orientation.scatter(projection="rodrigues", return_figure=True)
         assert isinstance(fig_rodrigues.axes[0], RodriguesPlot)
 
         # Add multiple axes to figure, one at a time
@@ -869,9 +863,7 @@ class TestOrientation:
         for pg in _symm_lists["proper_permutations"]:
             ori.symmetry = pg
             region = np.radians(pg.euler_fundamental_region)
-            assert np.all(
-                np.max(ori.in_euler_fundamental_region(), axis=0) <= region
-            )
+            assert np.all(np.max(ori.in_euler_fundamental_region(), axis=0) <= region)
 
     def test_from_path_ends(self):
         # generate paths with orientations to check symmetry copying
