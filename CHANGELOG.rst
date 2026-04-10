@@ -12,9 +12,12 @@ Unreleased
 
 Added
 -----
+- Phases can be defined using lattice-based class methods, such as ``Phase.cubic``
 
 Changed
 -------
+- The symmetry-dependent default lattice parameters in ``Phase.structure`` have
+  been changed to crystallographically possible values.
 
 Removed
 -------
