@@ -21,20 +21,20 @@ import numpy as np
 import pytest
 
 import orix.crystal_map as ocm
-from orix.plot import IPFColorKeyTSL, DirectionColorKeyTSL
-from orix.plot.direction_color_keys._util import polar_coordinates_in_sector
+import orix.plot as opl
 import orix.quaternion.symmetry as osm
 import orix.vector as ove
+
+from orix.plot.direction_color_keys._util import polar_coordinates_in_sector
 
 
 class TestDirectionColorKeyTSL:
     def test_direction2color(self):
-        ckey_oh = DirectionColorKeyTSL(osm.Oh)
-        ckey_oh_direction = ckey_oh.direction_color_key
-        assert repr(ckey_oh_direction) == "DirectionColorKeyTSL, symmetry m-3m"
+        ckey_oh = opl.DirectionColorKeyTSL(osm.Oh)
+        assert repr(ckey_oh) == "DirectionColorKeyTSL, symmetry m-3m"
 
     def test_direction2color_inputs(self):
-        ckey_oh = IPFColorKeyTSL(osm.Oh)
+        ckey_oh = opl.IPFColorKeyTSL(osm.Oh)
         p1 = ocm.Phase(name="fakename", point_group=osm.Oh)
         p2 = ocm.Phase(name="fakename", point_group=osm.D6h)
         arr = np.linspace(0, 5, 30).reshape(10, 3)
@@ -99,7 +99,7 @@ class TestDirectionColorKeyTSL:
     def test_rgba_grid(
         self, symmetry, expected_shape, expected_xy_lims, expected_labels
     ):
-        ckey = IPFColorKeyTSL(symmetry)
+        ckey = opl.IPFColorKeyTSL(symmetry)
         ckey_dcc = ckey.direction_color_key
         rgb_grid, (xlim, ylim) = ckey_dcc._create_rgba_grid(return_extent=True)
         (x_min, x_max), (y_min, y_max) = xlim, ylim
@@ -119,7 +119,7 @@ class TestDirectionColorKeyTSL:
     )
     @pytest.mark.slow
     def test_rgba_grid_alpha(self, symmetry):
-        ckey = IPFColorKeyTSL(symmetry)
+        ckey = opl.IPFColorKeyTSL(symmetry)
         ckey_direction = ckey.direction_color_key
         rgba_grid = ckey_direction._create_rgba_grid()
         # test invalid points have alpha = 0
