@@ -448,10 +448,7 @@ def test_get_point_group():
 
         sg = GetSpaceGroup(sg_number)
         pg = get_point_group(sg_number, proper=False)
-        assert (
-            proper_pg
-            == spacegroup2pointgroup_dict[sg.point_group_name]["proper"]
-        )
+        assert proper_pg == spacegroup2pointgroup_dict[sg.point_group_name]["proper"]
         assert pg == spacegroup2pointgroup_dict[sg.point_group_name]["improper"]
 
 
@@ -544,9 +541,7 @@ def test_symmetry_plot(pg):
 
 @pytest.mark.parametrize("symmetry", [C1, C4, Oh])
 def test_symmetry_plot_raises(symmetry):
-    with pytest.raises(
-        TypeError, match="Orientation must be a Rotation instance"
-    ):
+    with pytest.raises(TypeError, match="Orientation must be a Rotation instance"):
         _ = symmetry.plot(return_figure=True, orientation="test")
 
 
@@ -687,9 +682,7 @@ class TestFundamentalSectorFromSymmetry:
     def test_fundamental_sector_s6(self):
         pg = S6  # -3
         fs = pg.fundamental_sector
-        assert np.allclose(
-            fs.data, [[0, 0, 1], [0, 1, 0], [0.866, 0.5, 0]], atol=1e-3
-        )
+        assert np.allclose(fs.data, [[0, 0, 1], [0, 1, 0], [0.866, 0.5, 0]], atol=1e-3)
         assert np.allclose(
             fs.vertices.data, [[1, 0, 0], [0, 0, 1], [-0.5, 0.866, 0]], atol=1e-4
         )
@@ -698,9 +691,7 @@ class TestFundamentalSectorFromSymmetry:
     def test_fundamental_sector_d3(self):
         pg = D3  # 32
         fs = pg.fundamental_sector
-        assert np.allclose(
-            fs.data, [[0, 0, 1], [0, 1, 0], [0.866, 0.5, 0]], atol=1e-3
-        )
+        assert np.allclose(fs.data, [[0, 0, 1], [0, 1, 0], [0.866, 0.5, 0]], atol=1e-3)
         assert np.allclose(
             fs.vertices.data, [[1, 0, 0], [0, 0, 1], [-0.5, 0.866, 0]], atol=1e-4
         )
@@ -709,9 +700,7 @@ class TestFundamentalSectorFromSymmetry:
     def test_fundamental_sector_c3v(self):
         pg = C3v  # 3m
         fs = pg.fundamental_sector
-        assert np.allclose(
-            fs.data, [[0.5, 0.866, 0], [0.5, -0.866, 0]], atol=1e-3
-        )
+        assert np.allclose(fs.data, [[0.5, 0.866, 0], [0.5, -0.866, 0]], atol=1e-3)
         assert np.allclose(fs.vertices.data, [[0, 0, 1], [0, 0, -1]])
         assert np.allclose(fs.center.data, [[0.5, 0, 0]])
 
@@ -738,9 +727,7 @@ class TestFundamentalSectorFromSymmetry:
     def test_fundamental_sector_c3h(self):
         pg = C3h  # -6
         fs = pg.fundamental_sector
-        assert np.allclose(
-            fs.data, [[0, 0, 1], [0, 1, 0], [0.866, 0.5, 0]], atol=1e-3
-        )
+        assert np.allclose(fs.data, [[0, 0, 1], [0, 1, 0], [0.866, 0.5, 0]], atol=1e-3)
         assert np.allclose(
             fs.vertices.data, [[1, 0, 0], [0, 0, 1], [-0.5, 0.866, 0]], atol=1e-3
         )
@@ -749,9 +736,7 @@ class TestFundamentalSectorFromSymmetry:
     def test_fundamental_sector_c6h(self):
         pg = C6h  # 6/m
         fs = pg.fundamental_sector
-        assert np.allclose(
-            fs.data, [[0, 0, 1], [0, 1, 0], [0.866, -0.5, 0]], atol=1e-3
-        )
+        assert np.allclose(fs.data, [[0, 0, 1], [0, 1, 0], [0.866, -0.5, 0]], atol=1e-3)
         assert np.allclose(
             fs.vertices.data, [[1, 0, 0], [0, 0, 1], [0.5, 0.866, 0]], atol=1e-3
         )
@@ -760,9 +745,7 @@ class TestFundamentalSectorFromSymmetry:
     def test_fundamental_sector_d6(self):
         pg = D6  # 622
         fs = pg.fundamental_sector
-        assert np.allclose(
-            fs.data, [[0, 0, 1], [0, 1, 0], [0.866, -0.5, 0]], atol=1e-3
-        )
+        assert np.allclose(fs.data, [[0, 0, 1], [0, 1, 0], [0.866, -0.5, 0]], atol=1e-3)
         assert np.allclose(
             fs.vertices.data, [[1, 0, 0], [0, 0, 1], [0.5, 0.866, 0]], atol=1e-3
         )
@@ -778,9 +761,7 @@ class TestFundamentalSectorFromSymmetry:
     def test_fundamental_sector_d3h(self):
         pg = D3h  # -6m2
         fs = pg.fundamental_sector
-        assert np.allclose(
-            fs.data, [[0, 0, 1], [0, 1, 0], [0.866, -0.5, 0]], atol=1e-3
-        )
+        assert np.allclose(fs.data, [[0, 0, 1], [0, 1, 0], [0.866, -0.5, 0]], atol=1e-3)
         assert np.allclose(
             fs.vertices.data, [[1, 0, 0], [0, 0, 1], [0.5, 0.866, 0]], atol=1e-3
         )
@@ -789,9 +770,7 @@ class TestFundamentalSectorFromSymmetry:
     def test_fundamental_sector_d6h(self):
         pg = D6h  # 6/mmm
         fs = pg.fundamental_sector
-        assert np.allclose(
-            fs.data, [[0, 0, 1], [0, 1, 0], [0.5, -0.866, 0]], atol=1e-3
-        )
+        assert np.allclose(fs.data, [[0, 0, 1], [0, 1, 0], [0.5, -0.866, 0]], atol=1e-3)
         assert np.allclose(
             fs.vertices.data, [[1, 0, 0], [0, 0, 1], [0.866, 0.5, 0]], atol=1e-3
         )
@@ -800,9 +779,7 @@ class TestFundamentalSectorFromSymmetry:
     def test_fundamental_sector_t(self):
         pg = T  # 23
         fs = pg.fundamental_sector
-        assert np.allclose(
-            fs.data, [[1, 1, 0], [1, -1, 0], [0, -1, 1], [0, 1, 1]]
-        )
+        assert np.allclose(fs.data, [[1, 1, 0], [1, -1, 0], [0, -1, 1], [0, 1, 1]])
         assert np.allclose(
             fs.vertices.data,
             [
@@ -813,9 +790,7 @@ class TestFundamentalSectorFromSymmetry:
             ],
             atol=1e-4,
         )
-        assert np.allclose(
-            fs.center.data, [[0.7076, -0.0004, 0.7067]], atol=1e-4
-        )
+        assert np.allclose(fs.center.data, [[0.7076, -0.0004, 0.7067]], atol=1e-4)
 
     def test_fundamental_sector_th(self):
         pg = Th  # m-3
@@ -987,16 +962,10 @@ class TestEulerFundamentalRegion:
     def test_special_rotation(self):
         for pg in [C1, C2z, C3, C4, C6]:
             assert np.allclose(pg._special_rotation.data, (1, 0, 0, 0))
-        assert np.allclose(
-            C2x._special_rotation.data, ((1, 0, 0, 0), (0, 1, 0, 0))
-        )
-        assert np.allclose(
-            C2y._special_rotation.data, ((1, 0, 0, 0), (0, 0, 1, 0))
-        )
+        assert np.allclose(C2x._special_rotation.data, ((1, 0, 0, 0), (0, 1, 0, 0)))
+        assert np.allclose(C2y._special_rotation.data, ((1, 0, 0, 0), (0, 0, 1, 0)))
         for pg in [D2, D4, D6, D3]:
-            assert np.allclose(
-                pg._special_rotation.data, ((1, 0, 0, 0), (0, -1, 0, 0))
-            )
+            assert np.allclose(pg._special_rotation.data, ((1, 0, 0, 0), (0, -1, 0, 0)))
         assert np.allclose(
             D3y._special_rotation.data,
             ((1, 0, 0, 0), (0, -1 / np.sqrt(2), 1 / np.sqrt(2), 0)),
@@ -1025,9 +994,7 @@ class TestEulerFundamentalRegion:
         )
 
         unrecognized_symmetry = Symmetry.random(4)
-        assert np.allclose(
-            unrecognized_symmetry._special_rotation.data, (1, 0, 0, 0)
-        )
+        assert np.allclose(unrecognized_symmetry._special_rotation.data, (1, 0, 0, 0))
 
         # All point groups provide at least one rotation
         for pg in _groups:

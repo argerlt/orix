@@ -413,9 +413,7 @@ class Symmetry(oqu.Rotation):
         return Symmetry.from_generators(*generators)
 
     def __hash__(self) -> int:
-        return hash(
-            self.name.encode() + self.data.tobytes() + self.improper.tobytes()
-        )
+        return hash(self.name.encode() + self.data.tobytes() + self.improper.tobytes())
 
     # ------------------------ Class methods ------------------------- #
 
@@ -563,9 +561,7 @@ class Symmetry(oqu.Rotation):
         if orientation is None:
             # orientation chosen to mimic stereographic projections as
             # shown: http://xrayweb.chem.ou.edu/notes/symmetry.html
-            orientation = oqu.Rotation.from_axes_angles(
-                (-1, 8, 1), np.deg2rad(65)
-            )
+            orientation = oqu.Rotation.from_axes_angles((-1, 8, 1), np.deg2rad(65))
         if not isinstance(orientation, oqu.Rotation):
             raise TypeError("Orientation must be a Rotation instance.")
         orientation = self.outer(orientation)
