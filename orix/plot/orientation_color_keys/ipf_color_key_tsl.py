@@ -73,9 +73,7 @@ class IPFColorKeyTSL(IPFColorKey):
                 try:
                     direction = Vector3d(np.asanyarray(direction))
                 except:
-                    raise ValueError(
-                        "'direction' cannot be interpreted as a Vector3d"
-                    )
+                    raise ValueError("'direction' cannot be interpreted as a Vector3d")
             if direction.size != 1:
                 raise ValueError("Only one sample direction can be given")
         super().__init__(symmetry.laue, direction=direction)

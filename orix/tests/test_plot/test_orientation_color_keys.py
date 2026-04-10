@@ -56,9 +56,7 @@ class TestIPFColorKeyTSL:
         ckey_oh = opl.IPFColorKeyTSL(pg_o)
         assert np.allclose(ckey_oh.symmetry.data, pg_oh.data)
         assert np.allclose(ckey_oh.direction.data, (0, 0, 1))
-        assert (
-            repr(ckey_oh) == "IPFColorKeyTSL, symmetry: m-3m, direction: [0 0 1]"
-        )
+        assert repr(ckey_oh) == "IPFColorKeyTSL, symmetry: m-3m, direction: [0 0 1]"
         fig_o = ckey_oh.plot(return_figure=True)
         ax_o = fig_o.axes[0]
         assert ax_o._symmetry.name == pg_oh.name
@@ -75,13 +73,9 @@ class TestIPFColorKeyTSL:
         ckey_c2h = opl.IPFColorKeyTSL(pg_c2, ove.Vector3d.xvector())
         assert np.allclose(ckey_c2h.symmetry.data, pg_c2h.data)
         assert np.allclose(ckey_c2h.direction.data, (1, 0, 0))
-        assert (
-            repr(ckey_c2h) == "IPFColorKeyTSL, symmetry: 2/m, direction: [1 0 0]"
-        )
+        assert repr(ckey_c2h) == "IPFColorKeyTSL, symmetry: 2/m, direction: [1 0 0]"
         rgb_c2h = ckey_c2h.orientation2color(ori2)
-        assert np.allclose(
-            rgb_c2h, ((1, 0, 0), (0, 1, 0.23), (0, 0.23, 1)), atol=0.2
-        )
+        assert np.allclose(rgb_c2h, ((1, 0, 0), (0, 1, 0.23), (0, 0.23, 1)), atol=0.2)
 
         # Color vertices of D3d IPF red, green and blue
         pg_d3d = osm.D3d  # -3m

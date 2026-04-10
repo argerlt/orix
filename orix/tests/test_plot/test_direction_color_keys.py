@@ -22,10 +22,9 @@ import pytest
 
 import orix.crystal_map as ocm
 import orix.plot as opl
+from orix.plot.direction_color_keys._util import polar_coordinates_in_sector
 import orix.quaternion.symmetry as osm
 import orix.vector as ove
-
-from orix.plot.direction_color_keys._util import polar_coordinates_in_sector
 
 
 class TestDirectionColorKeyTSL:
