@@ -18,11 +18,13 @@
 #
 
 from diffpy.structure import Atom, Lattice, Structure, loadStructure
+import diffpy.structure as dst
 import numpy as np
 import pytest
 
 from orix.crystal_map import Phase
 from orix.crystal_map._phase import default_lattice, new_structure_matrix_from_alignment
+import orix.crystal_map as ocm
 from orix.quaternion.symmetry import O, Symmetry
 
 
@@ -563,7 +565,7 @@ class TestPhase:
         # Check atom positions in ORIGINAL lattice alignment
         # Doing the check in orix's alignment makes independently computing expected sites difficult
         s = exp.structure.copy()
-        s.placeInLattice(Lattice(base=phase._diffpy_lattice))
+        s.placeInLattice(dst.Lattice(base=phase._diffpy_lattice))
         # Use set to avoid having to ensure the order is the same
         assert set(tuple(xyz.round(8).tolist()) for xyz in s.xyz) == set(
             expected_atom_positions
@@ -574,7 +576,7 @@ class TestPhase:
         assert np.array_equal(base, exp2.structure.lattice.base)
         assert len(exp2.structure) == len(expected_atom_positions)
         s = exp2.structure.copy()
-        s.placeInLattice(Lattice(base=phase._diffpy_lattice))
+        s.placeInLattice(dst.Lattice(base=phase._diffpy_lattice))
         assert set(tuple(xyz.round(8).tolist()) for xyz in s.xyz) == set(
             expected_atom_positions
         )
@@ -954,7 +956,7 @@ class TestPhase:
         filepath = tmp_path / "tmp.cif"
         with open(filepath, "w") as file:
             file.write(cif_file_content)
-        phase = Phase.from_cif(filepath)
+        phase = ocm.Phase.from_cif(filepath)
         # Asymmetric unit is automatically expanded when read from cif
         assert len(phase.structure) == expected_atom_count
         # Expand just in case
