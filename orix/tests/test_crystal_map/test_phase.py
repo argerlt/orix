@@ -982,3 +982,45 @@ class TestPhase:
     def test_default_lattice_raises(self):
         with pytest.raises(ValueError, match="Unknown crystal system 'rhombohedral'"):
             default_lattice("rhombohedral")
+
+    def test_plot_unit_cell(self):
+        import matplotlib.pyplot as plt
+
+        Al2O3_atoms = [
+            dst.Atom("Al", [1 / 3, 2 / 3, 0.815]),
+            dst.Atom("O", [0.361, 1 / 3, 0.583]),
+        ]
+        Al2O3_lattice = dst.Lattice(0.481, 0.481, 1.391, 90, 90, 120)
+        Al2O3_structure = dst.Structure(atoms=Al2O3_atoms, lattice=Al2O3_lattice)
+        Al2O3_phase = ocm.Phase(
+            name="Alumina",
+            space_group=167,
+            structure=Al2O3_structure,
+            color="red",
+        ).expand_asymmetric_unit()
+        Fe_atoms = [
+            dst.Atom("Fe", [0, 0, 0]),
+            dst.Atom("Fe", [1, 0, 0]),
+            dst.Atom("Fe", [0, 1, 0]),
+            dst.Atom("Fe", [0, 0, 1]),
+            dst.Atom("Fe", [0, 1, 1]),
+            dst.Atom("Fe", [1, 0, 1]),
+            dst.Atom("Fe", [1, 1, 0]),
+            dst.Atom("Fe", [1, 1, 1]),
+            dst.Atom("Fe", [1 / 2, 1 / 2, 1 / 2]),
+        ]
+        Fe_lattice = dst.Lattice(1, 1, 1, 90, 90, 90)
+        Fe_structure = dst.Structure(atoms=Fe_atoms, lattice=Fe_lattice)
+        Fe_phase = ocm.Phase(point_group="m3m", structure=Fe_structure)
+        for p in [Al2O3_phase, Fe_phase]:
+            fig1 = p.plot_unit_cell(figsize=[5, 4], return_figure=True)
+            fig2 = p.plot_unit_cell(
+                figsize=np.array([5.1, 4.3]), return_figure=True
+            )
+            p.plot_unit_cell(
+                show_xyz=True, show_atoms=True, show_uvw_labels=True
+            )
+            p.plot_unit_cell(
+                show_xyz=False, show_atoms=False, show_uvw_labels=False
+            )
+            plt.close("all")

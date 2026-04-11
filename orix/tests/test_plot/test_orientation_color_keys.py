@@ -19,6 +19,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pytest
 
 from orix.plot import EulerColorKey, IPFColorKeyTSL
 from orix.quaternion import Orientation, symmetry
