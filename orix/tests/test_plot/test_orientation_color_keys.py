@@ -21,12 +21,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from orix.plot import EulerColorKey, IPFColorKeyTSL
-from orix.quaternion import Orientation, symmetry
-from orix.vector import Vector3d
 import orix.plot as opl
+from orix.plot import EulerColorKey, IPFColorKeyTSL
 import orix.quaternion as oqu
+from orix.quaternion import Orientation, symmetry
 import orix.vector as ove
+from orix.vector import Vector3d
 
 
 class TestIPFColorKeyTSL:

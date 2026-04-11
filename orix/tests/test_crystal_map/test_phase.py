@@ -17,14 +17,14 @@
 # along with orix. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from diffpy.structure import Atom, Lattice, Structure, loadStructure
 import diffpy.structure as dst
+from diffpy.structure import Atom, Lattice, Structure, loadStructure
 import numpy as np
 import pytest
 
+import orix.crystal_map as ocm
 from orix.crystal_map import Phase
 from orix.crystal_map._phase import default_lattice, new_structure_matrix_from_alignment
-import orix.crystal_map as ocm
 from orix.quaternion.symmetry import O, Symmetry
 
 
@@ -1014,13 +1014,7 @@ class TestPhase:
         Fe_phase = ocm.Phase(point_group="m3m", structure=Fe_structure)
         for p in [Al2O3_phase, Fe_phase]:
             fig1 = p.plot_unit_cell(figsize=[5, 4], return_figure=True)
-            fig2 = p.plot_unit_cell(
-                figsize=np.array([5.1, 4.3]), return_figure=True
-            )
-            p.plot_unit_cell(
-                show_xyz=True, show_atoms=True, show_uvw_labels=True
-            )
-            p.plot_unit_cell(
-                show_xyz=False, show_atoms=False, show_uvw_labels=False
-            )
+            fig2 = p.plot_unit_cell(figsize=np.array([5.1, 4.3]), return_figure=True)
+            p.plot_unit_cell(show_xyz=True, show_atoms=True, show_uvw_labels=True)
+            p.plot_unit_cell(show_xyz=False, show_atoms=False, show_uvw_labels=False)
             plt.close("all")

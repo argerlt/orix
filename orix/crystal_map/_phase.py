@@ -458,9 +458,7 @@ class Phase:
         ax.set_aspect("equal")
         ax.set_proj_type = "ortho"
         fc = self.color_rgb + (0.1,)
-        ax.add_collection3d(
-            Poly3DCollection(v[f], facecolors=fc, edgecolors=[0, 0, 0])
-        )
+        ax.add_collection3d(Poly3DCollection(v[f], facecolors=fc, edgecolors=[0, 0, 0]))
         if show_xyz:
             ax.plot([0, 1], [0, 0], [0, 0], "grey")
             ax.plot([0, 0], [0, 1], [0, 0], "grey")
@@ -477,9 +475,7 @@ class Phase:
                 xyz = self.structure[i].xyz.dot(self._diffpy_lattice.T)
                 elem = self.structure[i].element.title()  # titlecase
                 rgb = _jmol_colors.get(elem, [0, 0, 0])
-                ax.scatter(
-                    *xyz, facecolor=np.array(rgb) / 255, s=300, edgecolor="k"
-                )
+                ax.scatter(*xyz, facecolor=np.array(rgb) / 255, s=300, edgecolor="k")
         if return_figure:
             return fig
         return
