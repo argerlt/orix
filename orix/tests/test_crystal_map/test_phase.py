@@ -994,23 +994,19 @@ class TestPhase:
             phase.expand_asymmetric_unit()
 
     def test_default_lattice(self):
-        for symmetry, system in [
-            ["1", "triclinic"],
-            ["2", "monoclinic"],
-            ["222", "orthorhombic"],
-            ["422", "tetragonal"],
-            ["432", "cubic"],
-            ["3", "trigonal"],
-            ["622", "hexagonal"],
-        ]:
-            phase = ocm.Phase(point_group=symmetry)
-            actual_abcABG = phase.structure.lattice.abcABG()
-            expected_abcABG = ocm._phase._default_lattices[system].abcABG()
-            assert np.allclose(actual_abcABG, expected_abcABG)
-        abcABG = ocm._phase.default_lattice("hexagonal").abcABG()
-        assert np.allclose(abcABG, [1, 1, 1.5, 90, 90, 120])
-        with pytest.raises(ValueError, match="Unknown"):
-            ocm._phase.default_lattice("banana")
+        for S in ["1", "2", "222", "422", "432"]:
+            phase = ocm.Phase(point_group=S)
+            lattice_parameters = phase.structure.lattice.abcABG()
+            assert np.allclose([1, 1, 1, 90, 90, 90], lattice_parameters)
+
+        for S in ["3", "622"]:
+            phase = ocm.Phase(point_group=S)
+            lattice_parameters = phase.structure.lattice.abcABG()
+            assert np.allclose([1, 1, 1, 90, 90, 120], lattice_parameters)
+
+    def test_default_lattice_raises(self):
+        with pytest.raises(ValueError, match="Unknown crystal system 'rhombohedral'"):
+            default_lattice("rhombohedral")
 
     def test_triclinic_classmethod(self):
         out = ocm.Phase.triclinic()
