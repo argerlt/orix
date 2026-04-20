@@ -101,7 +101,7 @@ class Phase:
     Parameters
     ----------
     name
-        The name to give the phase. If not given, a name will be inhereted 
+        The name to give the phase. If not given, a name will be inhereted
         from *structure*, if possible. If a phase is given, a copy of that
         phase is returned instead, and all further arguments are ignored.
 
@@ -1033,7 +1033,6 @@ def new_structure_matrix_from_alignment(
     new_matrix = new_vectors.dot(old_matrix.reshape(3, 1)).round(12)
 
     return new_matrix
-
 
 
 def default_lattice(system: VALID_SYSTEMS) -> dst.Lattice:
