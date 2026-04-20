@@ -101,13 +101,12 @@ class Phase:
     Parameters
     ----------
     name
-        The name to give to the Phase. If None, a name will be inhereted
-        from *structure* if possible. If name is a Phase object, a copy
-        of that phase is returned instead, and all further arguments
-        are ignored.
+        The name to give the phase. If not given, a name will be inhereted 
+        from *structure*, if possible. If a phase is given, a copy of that
+        phase is returned instead, and all further arguments are ignored.
 
     space_group
-        Space group describing the symmetry of the Phase. This can
+        Space group describing the symmetry of the phase. This can
         either be a number 1-230 corresponding to the 230 space groups
         defined in the International Tables for Crystallography, or a
         diffpy :class:`~diffpy.structure.spacegroup.SpaceGroup` object.
@@ -115,16 +114,16 @@ class Phase:
 
     point_group
         Point group describing the non-translational symmetry of the
-        Phase. This can be an orix :class:`~orix.quaternion.symmetry.Symmetry`
+        phase. This can be an orix :class:`~orix.quaternion.symmetry.Symmetry`
         object or one of the known point
         group aliases (see the Notes section for details). It must be
-        compatable with *space_group* if both are given. If
-        None, the correct point group will either be derived from
-        *space_group*, or left as None if *space_group* is None.
+        compatable with *space_group* if both are given. If not given,
+        then either an appropriate point group will be derived from
+        *space_group*, or set to None if *space_group* is also None.
 
     structure
         :class:`~diffpy.structure.structure.Structure` describing the
-        lattice and atomic positions. If None, a default
+        lattice and atomic positions. If not given, a default
         :class:`~diffpy.structure.structure.Structure` is used. If
         a space group or point group has been defined, the structure
         will also include a :class:`~diffpy.structure.lattice.Lattice`
@@ -133,12 +132,13 @@ class Phase:
     color
         The colour to use when plotting this phase. Default is blue.
 
-    Notes
-    -----
+    Examples
+    --------
     The list of known point group aliases can be seen using the
     following command:
-        >>> import orix.quaternion as oqu
-        >>> [point_group.name for point_group in oqu.symmetry._groups]
+        >>> import orix.quaternion.symmetry as osm
+        >>> pg_ aliases = [pg.name for pg in osm._groups]
+        >>> print(pg_aliases)
     """
 
     def __init__(
