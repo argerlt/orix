@@ -218,7 +218,13 @@ class Phase:
 
     @property
     def name(self) -> str:
-        """The name of the phase."""
+        """The name of the phase.
+
+        Parameters
+        ----------
+        value : str
+            Phase name.
+        """
         return self.structure.title
 
     @name.setter
@@ -316,7 +322,7 @@ class Phase:
 
     @property
     def is_hexagonal(self) -> bool:
-        """Returns True for hexagonal and trigonal crystal structures."""
+        """Return True for hexagonal and trigonal crystal structures."""
         return np.allclose(self.structure.lattice.abcABG()[3:], [90, 90, 120])
 
     @property
