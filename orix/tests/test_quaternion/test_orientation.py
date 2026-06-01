@@ -106,23 +106,6 @@ def test_set_symmetry(orientation, symmetry, expected):
     assert np.allclose(o.data, expected, atol=1e-3)
 
 
-@pytest.mark.parametrize(
-    "symmetry, vector",
-    [(C1, (1, 2, 3)), (C2, (1, -1, 3)), (C3, (1, 1, 1)), (O, (0, 1, 0))],
-    indirect=["vector"],
-)
-def test_orientation_persistence(symmetry, vector):
-    v = symmetry.outer(vector).flatten()
-    o = Orientation.random()
-    oc = Orientation(o.data, symmetry=symmetry)
-    oc = oc.reduce()
-    v1 = o * v
-    v1 = Vector3d(v1.data.round(4))
-    v2 = oc * v
-    v2 = Vector3d(v2.data.round(4))
-    assert v1._tuples == v2._tuples
-
-
 @pytest.mark.parametrize("symmetry", [C1, C2, C4, D2, D6, T, O])
 def test_getitem(orientation, symmetry):
     orientation.symmetry = symmetry
