@@ -526,20 +526,22 @@ def test_orientation_equality():
 
 class TestOrientationInitialization:
     def test_from_euler_symmetry(self):
-        euler = np.deg2rad([90, 45, 90])
-        o1 = Orientation.from_euler(euler)
-        assert np.allclose(o1.data, [0, -0.3827, 0, -0.9239], atol=1e-4)
-        assert o1.symmetry.name == "1"
-        o2 = Orientation.from_euler(euler, symmetry=Oh)
-        o2 = o2.reduce()
-        assert np.allclose(o2.data, [0.9239, 0, 0.3827, 0], atol=1e-4)
-        assert o2.symmetry.name == "m-3m"
-        o3 = Orientation(o1.data, symmetry=Oh)
-        o3 = o3.reduce()
-        assert np.allclose(o3.data, o2.data)
+        euler = [90, 45, 90]
+        ori1 = Orientation.from_euler(euler, degrees=True)
+        assert ori1.symmetry.name == "1"
+        assert np.allclose(ori1.data, [0, -0.3827, 0, -0.9239], atol=1e-4)
 
-        o4 = Orientation.from_euler(np.rad2deg(euler), degrees=True)
-        assert np.allclose(o4.data, o1.data)
+        ori2 = Orientation.from_euler(euler, symmetry=Oh, degrees=True)
+        assert ori2.symmetry.name == "m-3m"
+        ori2 = ori2.reduce()
+        assert np.allclose(ori2.data, [0.9239, 0, -0.3827, 0], atol=1e-4)
+
+        ori3 = Orientation(ori1, symmetry=Oh)
+        ori3 = ori3.reduce()
+        assert np.allclose(ori3.data, ori2.data)
+
+        ori4 = Orientation.from_euler(np.deg2rad(euler))
+        assert np.allclose(ori4.data, ori1.data)
 
     def test_from_matrix_symmetry(self):
         om = np.array(
