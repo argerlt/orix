@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -902,3 +902,9 @@ class TestOrientation:
         o1 = o.reduce()
         o2 = o.reduce(verbose=True)
         assert np.allclose(o1.data, o2.data)
+
+    @pytest.mark.flaky(reruns=3)
+    def test_reduce_all_groups(self):
+        for group in _groups:
+            ori = Orientation.random(symmetry=group)
+            assert np.isclose(ori.angle_with(ori.reduce()), 0)
