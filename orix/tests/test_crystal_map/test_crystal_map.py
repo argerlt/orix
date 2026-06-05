@@ -17,6 +17,8 @@
 # along with orix. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import logging
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -1087,10 +1089,28 @@ class TestCrystalMapShape:
         xmap = CrystalMap(**crystal_map_input)
         assert xmap.shape == expected_shape
 
-    def test_shape_recomputes(self, crystal_map: CrystalMap):
+    def test_shape_recomputes(self, crystal_map: CrystalMap, caplog):
+        caplog.set_level(logging.DEBUG, logger="orix.crystal_map")
+        log_msg = "(Re)computing shape"
+
+        # Recomputes
         assert crystal_map.shape == (4, 3)
+        assert log_msg in caplog.text
+        caplog.clear()
+
+        # Does not recompute
+        assert crystal_map.shape == (4, 3)
+        assert log_msg not in caplog.text
+        caplog.clear()
+
+        # Recomputes
         assert crystal_map[1:].shape == (3, 3)
+        assert log_msg in caplog.text
+        caplog.clear()
+
+        # Recomputes
         assert crystal_map[:, 0].shape == (4, 1)
+        assert log_msg in caplog.text
 
     @pytest.mark.parametrize(
         "crystal_map_input, expected_shape",

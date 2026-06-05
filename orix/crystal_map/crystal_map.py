@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import copy
+import logging
 from typing import Any
 
 import matplotlib.figure as mfigure
@@ -32,6 +33,8 @@ from orix.crystal_map.crystal_map_properties import CrystalMapProperties
 from orix.plot._util.color import get_named_matplotlib_colors
 from orix.quaternion.orientation import Orientation
 from orix.quaternion.rotation import Rotation
+
+_logger = logging.getLogger(__name__)
 
 
 class CrystalMap:
@@ -346,6 +349,7 @@ class CrystalMap:
     def shape(self) -> tuple[int] | tuple[int, int]:
         """Return the shape of points in data."""
         if self._shape is None:
+            _logger.debug("(Re)computing shape")
             self._shape = self._data_shape_from_coordinates()
         return self._shape
 
