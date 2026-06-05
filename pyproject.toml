@@ -46,6 +46,7 @@ all = [  # NB! Update constants.py if this list is updated!
 ]
 doc = [
     "ipykernel",  # Used by nbsphinx to execute notebooks
+    "matplotlib-scalebar",
     "memory_profiler",
     "nbconvert                      >= 7.16.4",
     "nbsphinx                       >= 0.7",
