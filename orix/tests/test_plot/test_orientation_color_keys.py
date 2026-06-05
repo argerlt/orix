@@ -37,15 +37,25 @@ class TestIPFColorKeyTSL:
         arr = np.linspace(0, 5, 30).reshape(10, 3)
         v = ove.Vector3d(arr)
         m = ove.Miller(xyz=arr, phase=p)
-        _ = opl.IPFColorKeyTSL(symmetry=osy.Oh, direction=v[0])
-        _ = opl.IPFColorKeyTSL(symmetry=osy.Oh, direction=[1, 1, 1])
+        _ = opl.IPFColorKeyTSL(symmetry=osy.C2, direction=v[0])
+        _ = opl.IPFColorKeyTSL(symmetry=osy.C2, direction=[1, 1, 1])
 
         with pytest.raises(ValueError, match="Sample direction cannot be "):
-            opl.IPFColorKeyTSL(symmetry=osy.Oh, direction=m)
+            opl.IPFColorKeyTSL(symmetry=osy.C2, direction=m)
         with pytest.raises(ValueError, match="Invalid sample direction "):
-            opl.IPFColorKeyTSL(symmetry=osy.Oh, direction=[1, 1, 1, 1, 1])
+            opl.IPFColorKeyTSL(symmetry=osy.C2, direction=[1, 1, 1, 1, 1])
         with pytest.raises(ValueError, match="Only one sample direction"):
-            opl.IPFColorKeyTSL(symmetry=osy.Oh, direction=v)
+            opl.IPFColorKeyTSL(symmetry=osy.C2, direction=v)
+
+    def test_ipf_color_key_tsl_repr(self):
+        assert (
+            repr(opl.IPFColorKeyTSL(osy.Ci))
+            == "IPFColorKeyTSL(symmetry='-1', direction=[0. 0. 1.])"
+        )
+        assert (
+            repr(opl.IPFColorKeyTSL(osy.O, direction=[1, 1, 0]))
+            == "IPFColorKeyTSL(symmetry='m-3m', direction=[1. 1. 0.])"
+        )
 
     def test_orientation2color(self):
         # Color vertices of Oh IPF red, green and blue
@@ -58,7 +68,6 @@ class TestIPFColorKeyTSL:
         ckey_oh = opl.IPFColorKeyTSL(pg_o)
         assert np.allclose(ckey_oh.symmetry.data, pg_oh.data)
         assert np.allclose(ckey_oh.direction.data, (0, 0, 1))
-        assert repr(ckey_oh) == "IPFColorKeyTSL, symmetry: m-3m, direction: [0 0 1]"
         fig_o = ckey_oh.plot(return_figure=True)
         ax_o = fig_o.axes[0]
         assert ax_o._symmetry.name == pg_oh.name
@@ -75,7 +84,6 @@ class TestIPFColorKeyTSL:
         ckey_c2h = opl.IPFColorKeyTSL(pg_c2, ove.Vector3d.xvector())
         assert np.allclose(ckey_c2h.symmetry.data, pg_c2h.data)
         assert np.allclose(ckey_c2h.direction.data, (1, 0, 0))
-        assert repr(ckey_c2h) == "IPFColorKeyTSL, symmetry: 2/m, direction: [1 0 0]"
         rgb_c2h = ckey_c2h.orientation2color(ori2)
         assert np.allclose(rgb_c2h, ((1, 0, 0), (0, 1, 0.23), (0, 0.23, 1)), atol=0.2)
 
@@ -98,6 +106,26 @@ class TestIPFColorKeyTSL:
         ckey_c1 = opl.IPFColorKeyTSL(pg_c1)
         rgb = ckey_c1.orientation2color(ori)
         assert np.allclose(rgb, ((1, 0, 0), (0, 1, 0), (0, 0, 1)))
+
+    def test_update_ipf_color_key_symmetry(self):
+        ckey = opl.IPFColorKeyTSL(osy.C1)
+        assert ckey.symmetry == osy.Ci
+
+        ckey.symmetry = osy.O
+        assert ckey.symmetry.name == "m-3m"
+
+        with pytest.raises(ValueError, match="Invalid symmetry"):
+            ckey.symmetry = "m-3m"
+
+    def test_update_ipf_color_key_direction(self):
+        ckey = opl.IPFColorKeyTSL(osy.C1)
+        assert np.allclose(ckey.direction.data, [0, 0, 1])
+
+        ckey.direction = [1, 2, 0]
+        assert np.allclose(ckey.direction.data, [1, 2, 0])
+
+        with pytest.raises(ValueError, match="Invalid sample direction"):
+            ckey.direction = [1, 2, 3, 4]
 
 
 class TestEulerColorKey:

@@ -70,8 +70,8 @@ class IPFColorKey(abc.ABC):
 
     def __repr__(self) -> str:
         return (
-            f"{self.__class__.__name__}, symmetry: {self.symmetry.name}, "
-            f"direction: {self.direction.data.squeeze()}"
+            f"{self.__class__.__name__}(symmetry={self.symmetry.name!r}, "
+            f"direction={self.direction.data.squeeze()})"
         )
 
     # ------------------------ Public methods ------------------------ #
@@ -98,7 +98,7 @@ class IPFColorKey(abc.ABC):
 
         if not isinstance(direction, Vector3d):
             try:
-                direction = Vector3d(np.asanyarray(direction))
+                direction = Vector3d(np.asanyarray(direction, dtype=np.float64))
             except Exception as err:
                 raise ValueError(f"Invalid sample direction {direction}") from err
 
