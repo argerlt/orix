@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -147,10 +147,8 @@ class TestMiller:
         assert m.coordinate_format == "hkl"
 
     def test_get_nearest(self):
-        assert (
-            Miller(uvw=[1, 0, 0], phase=TETRAGONAL_PHASE).get_nearest()
-            == NotImplemented
-        )
+        with pytest.raises(NotImplementedError):
+            Miller.random(phase=TETRAGONAL_PHASE).get_nearest()
 
     def test_mean(self):
         # Tested against MTEX v5.6.0
@@ -165,7 +163,8 @@ class TestMiller:
         assert m2_mean.coordinate_format == "UVTW"
         assert np.allclose(m2_mean.UVTW, [2, 1.5, -3.5, 0.5])
 
-        assert m2.mean(use_symmetry=True) == NotImplemented
+        with pytest.raises(NotImplementedError):
+            m2.mean(use_symmetry=True)
 
     def test_round(self):
         # Tested against MTEX v5.6.0
