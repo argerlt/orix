@@ -26,6 +26,9 @@ Fixed
 -----
 - ``CrystalMap.shape`` no longer recomputes unless the shape has changed since the last
   check, avoiding unnecessary recomputes that slowed down some interaction.
+- (Mis)orientation reduction to the fundamental zone via ``reduce()`` now correctly
+  applies the symmetries in the opposite order, from right to left,
+  `s_end * g * s_start`, where `g` is a (mis)orientation.
 
 
 2026-02-24 - version 0.14.2
