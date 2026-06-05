@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -1086,6 +1086,11 @@ class TestCrystalMapShape:
     def test_shape_from_coordinates(self, crystal_map_input, expected_shape):
         xmap = CrystalMap(**crystal_map_input)
         assert xmap.shape == expected_shape
+
+    def test_shape_recomputes(self, crystal_map: CrystalMap):
+        assert crystal_map.shape == (4, 3)
+        assert crystal_map[1:].shape == (3, 3)
+        assert crystal_map[:, 0].shape == (4, 1)
 
     @pytest.mark.parametrize(
         "crystal_map_input, expected_shape",

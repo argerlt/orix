@@ -343,7 +343,7 @@ class CrystalMap:
         return np.count_nonzero(self.is_in_data)
 
     @property
-    def shape(self) -> tuple:
+    def shape(self) -> tuple[int] | tuple[int, int]:
         """Return the shape of points in data."""
         if self._shape is None:
             self._shape = self._data_shape_from_coordinates()
