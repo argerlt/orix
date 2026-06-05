@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -23,19 +23,19 @@ import pytest
 import orix.crystal_map as ocm
 import orix.plot as opl
 from orix.plot.direction_color_keys._util import polar_coordinates_in_sector
-import orix.quaternion.symmetry as osm
+import orix.quaternion.symmetry as osy
 import orix.vector as ove
 
 
 class TestDirectionColorKeyTSL:
     def test_direction2color(self):
-        ckey_oh = opl.DirectionColorKeyTSL(osm.Oh)
+        ckey_oh = opl.DirectionColorKeyTSL(osy.Oh)
         assert repr(ckey_oh) == "DirectionColorKeyTSL, symmetry m-3m"
 
     def test_direction2color_inputs(self):
-        ckey_oh = opl.IPFColorKeyTSL(osm.Oh)
-        p1 = ocm.Phase(name="fakename", point_group=osm.Oh)
-        p2 = ocm.Phase(name="fakename", point_group=osm.D6h)
+        ckey_oh = opl.IPFColorKeyTSL(osy.Oh)
+        p1 = ocm.Phase(name="fakename", point_group=osy.Oh)
+        p2 = ocm.Phase(name="fakename", point_group=osy.D6h)
         arr = np.linspace(0, 5, 30).reshape(10, 3)
         v = ove.Vector3d(arr)
         m1 = ove.Miller(xyz=arr, phase=p1)
@@ -47,47 +47,47 @@ class TestDirectionColorKeyTSL:
         rgb2 = rgb_key.direction2color(direction=m1)
         assert np.allclose(rgb1, rgb2)
 
-        with pytest.raises(ValueError, match="'direction' has a Laue group"):
+        with pytest.raises(ValueError, match="Direction given in a crystal "):
             rgb_key.direction2color(direction=m2)
 
     def test_triclinic(self):
         # Get RGB colors for C1. Will never reach from IPFColorKeyTSL
         # since Ci (-1) is the Laue group of C1.
-        sector = osm.C1.fundamental_sector
+        sector = osy.C1.fundamental_sector
         rgb2 = polar_coordinates_in_sector(sector, ove.Vector3d.xvector())
         assert rgb2[0].size == rgb2[1].size == 0
 
     @pytest.mark.parametrize(
         "symmetry, expected_shape, expected_xy_lims, expected_labels",
         [
-            [osm.C1, (2000, 2000, 4), [(-1.0, 1.0), (-1.0, 1.0)], ""],
-            [osm.Ci, (2000, 2000, 4), [(-1.0, 1.0), (-1.0, 1.0)], ""],
+            [osy.C1, (2000, 2000, 4), [(-1.0, 1.0), (-1.0, 1.0)], ""],
+            [osy.Ci, (2000, 2000, 4), [(-1.0, 1.0), (-1.0, 1.0)], ""],
             [
-                osm.C2,
+                osy.C2,
                 (1000, 2000, 4),
                 [(-1.0, 1.0), (0.0, 1.0)],
                 "[$1 0 0$][$\\bar{1} 0 0$]",
             ],
             [
-                osm.S6,
+                osy.S6,
                 (1000, 1500, 4),
                 [(-0.5, 1.0), (0, 1.0)],
                 "[$2 \\bar{1} \\bar{1} 0$][$0 0 0 1$][$\\bar{1} 2 \\bar{1} 0$]",
             ],
             [
-                osm.D6,
+                osy.D6,
                 (500, 1000, 4),
                 [(0.0, 1.0), (0.0, 0.5)],
                 "[$2 \\bar{1} \\bar{1} 0$][$0 0 0 1$][$1 0 \\bar{1} 0$]",
             ],
             [
-                osm.Oh,
+                osy.Oh,
                 (367, 415, 4),
                 [(0.0, 0.414), (0.0, 0.366)],
                 "[$1 1 1$][$1 0 1$][$0 0 1$]",
             ],
             [
-                osm.Th,
+                osy.Th,
                 (415, 415, 4),
                 [(0.0, 0.414), (0.0, 0.414)],
                 "[$0 1 1$][$1 1 1$][$1 0 1$][$0 0 1$]",
@@ -114,7 +114,7 @@ class TestDirectionColorKeyTSL:
 
     @pytest.mark.parametrize(
         "symmetry",
-        [osm.C2, osm.D6, osm.Oh],
+        [osy.C2, osy.D6, osy.Oh],
     )
     @pytest.mark.slow
     def test_rgba_grid_alpha(self, symmetry):

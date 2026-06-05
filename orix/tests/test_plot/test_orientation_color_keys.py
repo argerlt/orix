@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -24,30 +24,32 @@ import pytest
 import orix.crystal_map as ocm
 import orix.plot as opl
 import orix.quaternion as oqu
-import orix.quaternion.symmetry as osm
+import orix.quaternion.symmetry as osy
 import orix.vector as ove
 
 
 class TestIPFColorKeyTSL:
-    def test_inputs(self):
-        # Colorkey directions should only be sample vectors (ie, interpretable
-        # as Vector3d objects)
-        p = ocm.Phase(name="fakename", point_group=osm.Oh)
+    def test_create_ipf_color_key_tsl(self):
+        # Colorkey directions should only be sample vectors (i.e.,
+        # interpretable as vectors)
+
+        p = ocm.Phase(name="fakename", point_group=osy.Oh)
         arr = np.linspace(0, 5, 30).reshape(10, 3)
         v = ove.Vector3d(arr)
         m = ove.Miller(xyz=arr, phase=p)
-        ckey = opl.IPFColorKeyTSL(symmetry=osm.Oh, direction=v[0])
-        ckey = opl.IPFColorKeyTSL(symmetry=osm.Oh, direction=[1, 1, 1])
-        with pytest.raises(ValueError, match="The sample direction"):
-            ckey = opl.IPFColorKeyTSL(symmetry=osm.Oh, direction=m)
-        with pytest.raises(ValueError, match="'direction' cannot be"):
-            ckey = opl.IPFColorKeyTSL(symmetry=osm.Oh, direction=[1, 1, 1, 1, 1])
+        _ = opl.IPFColorKeyTSL(symmetry=osy.Oh, direction=v[0])
+        _ = opl.IPFColorKeyTSL(symmetry=osy.Oh, direction=[1, 1, 1])
+
+        with pytest.raises(ValueError, match="Sample direction cannot be "):
+            opl.IPFColorKeyTSL(symmetry=osy.Oh, direction=m)
+        with pytest.raises(ValueError, match="Invalid sample direction "):
+            opl.IPFColorKeyTSL(symmetry=osy.Oh, direction=[1, 1, 1, 1, 1])
         with pytest.raises(ValueError, match="Only one sample direction"):
-            ckey = opl.IPFColorKeyTSL(symmetry=osm.Oh, direction=v)
+            opl.IPFColorKeyTSL(symmetry=osy.Oh, direction=v)
 
     def test_orientation2color(self):
         # Color vertices of Oh IPF red, green and blue
-        pg_o = osm.O  # 432
+        pg_o = osy.O  # 432
         pg_oh = pg_o.laue  # m-3m
         ori = oqu.Orientation.from_euler(
             np.radians(((0, 0, 0), (0, 45, 0), (-45, 54.7356, 45))),
@@ -64,7 +66,7 @@ class TestIPFColorKeyTSL:
         assert np.allclose(rgb_oh, ((1, 0, 0), (0, 1, 0), (0, 0, 1)), atol=0.1)
 
         # Color [001] and "diagonals" of 2/m IPF red, green and blue
-        pg_c2 = osm.C2  # 2
+        pg_c2 = osy.C2  # 2
         pg_c2h = pg_c2.laue  # 2/m
         ori2 = oqu.Orientation.from_euler(
             np.radians(((-90, -90, 0), (0, 90, -55), (0, 90, 55))),
@@ -78,7 +80,7 @@ class TestIPFColorKeyTSL:
         assert np.allclose(rgb_c2h, ((1, 0, 0), (0, 1, 0.23), (0, 0.23, 1)), atol=0.2)
 
         # Color vertices of D3d IPF red, green and blue
-        pg_d3d = osm.D3d  # -3m
+        pg_d3d = osy.D3d  # -3m
         ori3 = oqu.Orientation.from_euler(
             np.radians(((0, 0, 0), (0, -90, 60), (0, 90, 60))),
             symmetry=pg_d3d,
@@ -89,7 +91,7 @@ class TestIPFColorKeyTSL:
 
     def test_triclinic(self):
         # Complete circle, three vectors on equator 120 degrees apart
-        pg_c1 = osm.C1
+        pg_c1 = osy.C1
         ori = oqu.Orientation.from_euler(
             np.radians(((0, 90, 90), (0, 90, -30), (0, -90, 30))), symmetry=pg_c1
         )
@@ -111,7 +113,7 @@ class TestEulerColorKey:
             )
         )
 
-        ckey_1 = opl.EulerColorKey(osm.C1)
+        ckey_1 = opl.EulerColorKey(osy.C1)
         assert repr(ckey_1) == (
             "EulerColorKey, symmetry 1\nMax (phi1, Phi, phi2): (360, 180, 360)"
         )
@@ -128,7 +130,7 @@ class TestEulerColorKey:
             atol=1e-3,
         )
 
-        ckey_432 = opl.EulerColorKey(osm.O)
+        ckey_432 = opl.EulerColorKey(osy.O)
         assert repr(ckey_432) == (
             "EulerColorKey, symmetry 432\nMax (phi1, Phi, phi2): (360, 90, 90)"
         )
@@ -146,7 +148,7 @@ class TestEulerColorKey:
         )
 
     def test_plot(self):
-        ckey_432 = opl.EulerColorKey(osm.O)
+        ckey_432 = opl.EulerColorKey(osy.O)
         fig = ckey_432.plot(return_figure=True)
         assert isinstance(fig, plt.Figure)
         assert len(fig.axes) == 3
