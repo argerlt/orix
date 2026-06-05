@@ -130,6 +130,11 @@ html_context = {
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
 
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-suppress_warnings
+suppress_warnings = [
+    "config.cache",  # Sphinx-gallery func
+]
+
 # Syntax highlighting
 pygments_style = "friendly"
 
@@ -347,7 +352,7 @@ sphinx_gallery_conf = {
     "gallery_dirs": "examples",
     "reference_url": {"orix": None},
     "run_stale_examples": False,
-    "show_memory": True,
+    "show_memory": False,  # True is slow
 }
 autosummary_generate = True
 
