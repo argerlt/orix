@@ -12,6 +12,9 @@ Unreleased
 
 Added
 -----
+- Non-lazy computation of dot products with
+  ``Misorientation.get_distance_matrix(lazy=True)``.
+  Currently opt-in, but will be the default in the next minor version.
 
 Changed
 -------
@@ -19,6 +22,8 @@ Changed
   ``NotImplemented``.
 - ``Mille.mean(use_symmetry=True)`` now raises a ``NotImplementedError`` rather than
   returning ``NotImplemented``.
+- Improved (faster and using less memory) non-lazy computation of misorientation angles
+  from ``Orientation.with_angle_outer()``.
 
 Removed
 -------
