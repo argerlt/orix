@@ -32,6 +32,7 @@ from scipy.spatial.transform import Rotation as SciPyRotation
 from tqdm import tqdm
 
 from orix._utils.deprecation import deprecated
+from orix.quaternion._numba import _mori_distance_matrix
 from orix.quaternion.orientation_region import OrientationRegion
 from orix.quaternion.rotation import Rotation
 from orix.quaternion.symmetry import (
@@ -584,6 +585,8 @@ class Misorientation(Rotation):
         chunk_size: int = 20,
         progressbar: bool = True,
         degrees: bool = False,
+        *,
+        lazy: bool = True,
     ) -> np.ndarray:
         r"""Return the symmetry reduced smallest angle of rotation
         transforming every misorientation in this instance to every
@@ -595,19 +598,24 @@ class Misorientation(Rotation):
             Number of misorientations per axis to include in each
             iteration of the computation. Default is 20. Increasing this
             might reduce the computation time at the cost of increased
-            memory use.
+            memory use. Only used if *lazy* is True.
         progressbar
             Whether to show a progressbar during computation. Default is
-            ``True``.
+            True. Only used if *lazy* is True.
         degrees
-            If ``True``, the angles are returned in degrees. Default is
-            ``False``.
+            If True, the angles are returned in degrees. Default is
+            False.
+        lazy
+            Whether to compute with Dask. Default is True. Setting False
+            should be both faster and use less memory.
+
+            False will be the default in the future.
 
         Returns
         -------
         angles
-            Misorientation angles in radians (``degrees=False``) or
-            degrees (``degrees=True``).
+            Misorientation angles in radians (*degrees* is False) or
+            degrees (*degrees* is True).
 
         Notes
         -----
@@ -633,43 +641,27 @@ class Misorientation(Rotation):
         Examples
         --------
         >>> from orix.quaternion import Misorientation, symmetry
-        >>> M = Misorientation.from_axes_angles([1, 0, 0], [0, 90], degrees=True)
-        >>> M.symmetry = (symmetry.D6, symmetry.D6)
-        >>> M.get_distance_matrix(progressbar=False, degrees=True)
+        >>> mori = Misorientation.from_axes_angles([1, 0, 0], [0, 90], degrees=True)
+        >>> mori.symmetry = (symmetry.D6, symmetry.D6)
+        >>> mori.get_distance_matrix(progressbar=False, degrees=True)
         array([[ 0., 90.],
                [90.,  0.]])
         """
         # Reduce symmetry operations to the unique ones
         symmetry = _get_unique_symmetry_elements(*self.symmetry)
 
-        # Perform "s_k m_i s_l s_k m_j" (see Notes)
-        M1 = symmetry.outer(self).outer(symmetry)
-        M2 = M1._outer_dask(~self, chunk_size=chunk_size)
-
-        # Perform last outer product and reduce to all dot products at
-        # the same time
-        warnings.filterwarnings("ignore", category=da.PerformanceWarning)
-        str1 = "abcdefghijklmnopqrstuvwxy"[: M2.ndim]
-        str2 = "z" + str1[-1]  # Last axis has shape (4,)
-        sum_over = f"{str1},{str2}->{str1[:-1] + str2[0]}"
-        all_dot_products = da.einsum(sum_over, M2, symmetry.data)
-
-        # Get highest dot product
-        axes = (0, self.ndim + 1, 2 * self.ndim + 2)
-        dot_products = da.max(abs(all_dot_products), axis=axes)
-
-        # Round because some dot products are slightly above 1
-        dot_products = da.round(dot_products, 12)
-
-        # Calculate disorientation angles
-        angles_dask = da.arccos(2 * dot_products**2 - 1)
-        angles_dask = da.nan_to_num(angles_dask)
-        angles = np.zeros(angles_dask.shape)
-        if progressbar:
-            with ProgressBar():
-                da.store(sources=angles_dask, targets=angles)
+        if lazy:
+            angles = _get_distance_matrix_dask(
+                mori=self,
+                symmetry=symmetry,
+                chunk_size=chunk_size,
+                progressbar=progressbar,
+            )
         else:
-            da.store(sources=angles_dask, targets=angles)
+            qu = np.ascontiguousarray(self.unit.data.reshape(-1, 4), dtype=np.float64)
+            sym_ops = np.ascontiguousarray(symmetry.data, dtype=np.float64)
+            angles = _mori_distance_matrix(qu, sym_ops)
+            angles = angles.reshape(self.shape + self.shape)
 
         if degrees:
             angles = np.rad2deg(angles)
@@ -679,3 +671,41 @@ class Misorientation(Rotation):
     def inv(self) -> Misorientation:
         r"""Return the inverse misorientations :math:`M^{-1}`."""
         return self.__invert__()
+
+
+def _get_distance_matrix_dask(
+    mori: Misorientation,
+    symmetry: Symmetry,
+    chunk_size: int,
+    progressbar: bool,
+) -> np.ndarray:
+    # Perform "s_k m_i s_l s_k m_j" (see Notes)
+    M1 = symmetry.outer(mori).outer(symmetry)
+    M2 = M1._outer_dask(~mori, chunk_size=chunk_size)
+
+    # Perform last outer product and reduce to all dot products at
+    # the same time
+    warnings.filterwarnings("ignore", category=da.PerformanceWarning)
+    str1 = "abcdefghijklmnopqrstuvwxy"[: M2.ndim]
+    str2 = "z" + str1[-1]  # Last axis has shape (4,)
+    sum_over = f"{str1},{str2}->{str1[:-1] + str2[0]}"
+    all_dot_products = da.einsum(sum_over, M2, symmetry.data)
+
+    # Get highest dot product
+    axes = (0, mori.ndim + 1, 2 * mori.ndim + 2)
+    dot_products = da.max(abs(all_dot_products), axis=axes)
+
+    # Round because some dot products are slightly above 1
+    dot_products = da.round(dot_products, 12)
+
+    # Calculate disorientation angles
+    angles_dask = da.arccos(2 * dot_products**2 - 1)
+    angles_dask = da.nan_to_num(angles_dask)
+    angles = np.zeros(angles_dask.shape)
+    if progressbar:
+        with ProgressBar():
+            da.store(sources=angles_dask, targets=angles)
+    else:
+        da.store(sources=angles_dask, targets=angles)
+
+    return angles

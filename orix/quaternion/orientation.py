@@ -467,24 +467,24 @@ class Orientation(Misorientation):
             Another orientation.
         lazy
             Whether to perform the computation lazily with Dask. Default
-            is ``False``.
+            is False.
         chunk_size
             Number of orientations per axis to include in each iteration
-            of the computation. Default is 20. Only applies when
-            ``lazy=True``. Increasing this might reduce the computation
-            time at the cost of increased memory use.
+            of the computation. Default is 20. Only applies when *lazy*
+            is True. Increasing this might reduce the computation time
+            at the cost of increased memory use.
         progressbar
-            Whether to show a progressbar during computation if
-            ``lazy=True``. Default is ``True``.
+            Whether to show a progressbar during computation if *lazy*
+            is True. Default is True.
         degrees
-            If ``True``, the angles are returned in degrees. Default is
-            ``False``.
+            If True, the angles are returned in degrees. Default is
+            False.
 
         Returns
         -------
         angles
-            Smallest symmetry reduced angles in radians
-            (``degrees=False``) or degrees (``degrees=True``).
+            Smallest symmetry reduced angles in radians (*degrees* is
+            False) or degrees (*degrees* is True).
 
         See Also
         --------
@@ -492,27 +492,28 @@ class Orientation(Misorientation):
 
         Notes
         -----
-        Given two orientations :math:`O_i` and :math:`O_j`, the smallest
+        Given two orientations :math:`g_i` and :math:`g_j`, the smallest
         angle is considered as the geodesic distance
 
         .. math::
 
-            d(O_i, O_j) = \arccos(2(O_i \cdot O_j)^2 - 1),
+            d(g_i, g_j) = \arccos(2(g_i \cdot g_j)^2 - 1),
 
-        where :math:`(O_i \cdot O_j)` is the highest dot product between
-        symmetrically equivalent orientations to :math:`O_{i,j}`.
+        where :math:`(g_i \cdot g_j)` is the highest dot product between
+        symmetrically equivalent orientations to :math:`g_{i,j}`.
 
         Examples
         --------
+        >>> import numpy as np
         >>> from orix.quaternion import Orientation, symmetry
-        >>> O1 = Orientation.random((5, 3))
-        >>> O2 = Orientation.random((6, 2))
-        >>> omega1 = O1.angle_with_outer(O2)
+        >>> ori1 = Orientation.random((5, 3))
+        >>> ori2 = Orientation.random((6, 2))
+        >>> omega1 = ori1.angle_with_outer(ori2)
         >>> omega1.shape
         (5, 3, 6, 2)
-        >>> O1.symmetry = symmetry.Oh
-        >>> O2.symmetry = symmetry.Oh
-        >>> omega_sym = O1.angle_with_outer(O2)
+        >>> ori1.symmetry = symmetry.Oh
+        >>> ori2.symmetry = symmetry.Oh
+        >>> omega_sym = ori1.angle_with_outer(ori2)
         >>> np.allclose(omega1.data, omega_sym.data)
         False
         """
@@ -571,24 +572,24 @@ class Orientation(Misorientation):
         ----------
         lazy
             Whether to perform the computation lazily with Dask. Default
-            is ``False``.
+            is False.
         chunk_size
             Number of orientations per axis to include in each iteration
-            of the computation. Default is 20. Only applies when
-            ``lazy=True``. Increasing this might reduce the computation
-            time at the cost of increased memory use.
+            of the computation. Default is 20. Only applies when *lazy*
+            is True. Increasing this might reduce the computation time
+            at the cost of increased memory use.
         progressbar
-            Whether to show a progressbar during computation if
-            ``lazy=True``. Default is ``True``.
+            Whether to show a progressbar during computation if *lazy*
+            is True (default).
         degrees
-            If ``True``, the angles are returned in degrees. Default is
-            ``False``.
+            If True, the angles are returned in degrees. Default is
+            False.
 
         Returns
         -------
         angles
-            Symmetry reduced angles in radians (``degrees=False``) or
-            degrees (``degrees=True``).
+            Symmetry reduced angles in radians (*degrees* is False) or
+            degrees (*degrees* True).
 
         Notes
         -----
@@ -597,10 +598,10 @@ class Orientation(Misorientation):
 
         .. math::
 
-            d(O_i, O_j) = \arccos(2(O_i \cdot O_j)^2 - 1),
+            d(g_i, g_j) = \arccos(2(g_i \cdot g_j)^2 - 1),
 
-        where :math:`(O_i \cdot O_j)` is the highest dot product between
-        symmetrically equivalent orientations to :math:`O_{i,j}`.
+        where :math:`(g_i \cdot g_j)` is the highest dot product between
+        symmetrically equivalent orientations to :math:`g_{i,j}`.
         """
         angles = self.angle_with_outer(
             self,
