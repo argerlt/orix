@@ -15,6 +15,10 @@ Added
 
 Changed
 -------
+- ``Miller.get_nearest()`` now raises a ``NotImplementedError`` rather than returning
+  ``NotImplemented``.
+- ``Mille.mean(use_symmetry=True)`` now raises a ``NotImplementedError`` rather than
+  returning ``NotImplemented``.
 
 Removed
 -------
