@@ -24,7 +24,7 @@ from typing import Any, Literal
 import warnings
 
 import dask.array as da
-from dask.diagnostics import ProgressBar
+from dask.diagnostics.progress import ProgressBar
 import matplotlib.figure as mfigure
 from matplotlib.gridspec import SubplotSpec
 import numpy as np
@@ -436,14 +436,26 @@ class Misorientation(Rotation):
 
         Examples
         --------
+        >>> from orix.quaternion import Misorientation
         >>> from orix.quaternion.symmetry import C4, C2
-        >>> data = np.array([[0.5, 0.5, 0.5, 0.5], [0, 1, 0, 0]])
-        >>> M = Misorientation(data)
-        >>> M.symmetry = (C4, C2)
-        >>> M.reduce()
+        >>> mori = Misorientation([[0.5, 0.5, 0.5, 0.5], [0, 1, 0, 0]])
+        >>> mori.symmetry = (C4, C2)
+        >>> mori.reduce()
         Misorientation (2,) 4, 2
-        [[-0.7071  0.7071  0.      0.    ]
+        [[-0.7071 0.     -0.7071  0.    ]
         [ 0.      1.      0.      0.    ]]
+
+        Notes
+        -----
+        The misorientation with the smallest rotation angle is the one
+        inside the misorientation fundamental zone (FZ, asymmetric
+        domain) given by the proper point groups of :attr:`symmetry`.
+        The definition of the FZ follows the procedure in section 5.3.1
+        in :cite:`martineau2020multivariate`.
+
+        An alternative description of finding the Rodrigues FZ is given
+        in :cite:`morawiec1996rodrigues`, which is the basis for
+        reduction of (mis)orientations in EMsoft.
         """
         # Combine symmetry elements of start and end of transformation
         # given by the (mis)orientation
