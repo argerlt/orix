@@ -24,6 +24,9 @@ Deprecated
 
 Fixed
 -----
+- ``CrystalMap.shape`` no longer recalculates the shape unless the shape has
+  changed since the last run. This solves the slowdowns documented in #658 when
+  using the Variable Explorer Widgets in some IDEs.
 
 
 2026-02-24 - version 0.14.2

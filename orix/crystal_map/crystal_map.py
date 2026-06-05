@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -242,6 +242,7 @@ class CrystalMap:
 
         # Set data size
         data_size = rotations.shape[0]
+        self._shape = None
 
         # Set phase IDs
         if phase_id is None:  # Assume single phase data
@@ -344,7 +345,9 @@ class CrystalMap:
     @property
     def shape(self) -> tuple:
         """Return the shape of points in data."""
-        return self._data_shape_from_coordinates()
+        if self._shape is None:
+            self._shape = self._data_shape_from_coordinates()
+        return self._shape
 
     @property
     def ndim(self) -> int:
@@ -625,6 +628,8 @@ class CrystalMap:
             # Calls CrystalMapProperties.__setitem__()
             self.prop[name] = value
         else:
+            if name in ["_x", "_y", "_is_in_data"]:
+                self._shape = None
             return object.__setattr__(self, name, value)
 
     def __getitem__(self, key: str | slice | tuple | int | np.ndarray) -> CrystalMap:
@@ -697,6 +702,7 @@ class CrystalMap:
         # Return a copy with all attributes shallow except for the mask
         new_map = copy.copy(self)
         new_map.is_in_data = new_is_in_data
+        new_map._shape = None
 
         return new_map
 
