@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -23,13 +23,14 @@ from typing import Literal
 import warnings
 
 import dask.array as da
-from dask.diagnostics import ProgressBar
+from dask.diagnostics.progress import ProgressBar
 from diffpy.structure import Structure
 import matplotlib.figure as mfigure
 from matplotlib.gridspec import SubplotSpec
 import numpy as np
 from scipy.spatial.transform import Rotation as SciPyRotation
 
+from orix.quaternion._numba import _ori_angle_with_outer_sym
 from orix.quaternion.misorientation import Misorientation
 from orix.quaternion.rotation import Rotation
 from orix.quaternion.symmetry import (
@@ -515,9 +516,9 @@ class Orientation(Misorientation):
         >>> np.allclose(omega1.data, omega_sym.data)
         False
         """
-        O = self.unit
+        ori = self.unit
         if lazy:
-            dot_products = O._dot_outer_dask(other, chunk_size=chunk_size)
+            dot_products = ori._dot_outer_dask(other, chunk_size=chunk_size)
             # Round because some dot products are slightly above 1
             n_decimals = np.finfo(dot_products.dtype).precision
             dot_products = da.round(dot_products, n_decimals)
@@ -533,9 +534,22 @@ class Orientation(Misorientation):
             else:
                 da.store(sources=angles_dask, targets=angles)
         else:
-            dot_products = O.dot_outer(other)
-            angles = np.arccos(2 * dot_products**2 - 1)
-            angles = np.nan_to_num(angles)
+            symmetry = _get_unique_symmetry_elements(ori.symmetry, other.symmetry)
+
+            # Improper symmetry elements contribute 0 to the dot product
+            # in Rotation.dot_outer (they are masked out there), so we
+            # filter them before passing to the Numba kernel
+            proper = ~symmetry.improper.astype(bool)
+
+            # Use C-order reshape (-1, 4) so the flat index matches
+            # what np.reshape(O.shape + other.shape) reconstructs
+            qu_self = np.ascontiguousarray(ori.data.reshape(-1, 4), dtype=np.float64)
+            qu_other = np.ascontiguousarray(
+                other.unit.data.reshape(-1, 4), dtype=np.float64
+            )
+            qu_sym = np.ascontiguousarray(symmetry.data[proper], dtype=np.float64)
+            angles = _ori_angle_with_outer_sym(qu_self, qu_other, qu_sym)
+            angles = angles.reshape(ori.shape + other.shape)
 
         if degrees:
             angles = np.rad2deg(angles)
