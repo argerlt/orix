@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -65,6 +65,9 @@ def file_reader(filename: str, autogen_names: bool | None = True) -> CrystalMap:
     ----------
     filename
         Path and file name.
+    autogen_names
+        Whether to allow autogenerating names if some of them are the
+        same.
 
     Returns
     -------
