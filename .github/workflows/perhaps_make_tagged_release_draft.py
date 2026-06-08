@@ -17,9 +17,10 @@
 # along with orix. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import json
 import re
+import requests
 
-from outdated import check_outdated
 from packaging.version import Version
 
 with open("../../orix/__init__.py") as fid:
@@ -33,7 +34,11 @@ with open("../../orix/__init__.py") as fid:
 # version is different (hopefully always newer if different) from the
 # PyPI version
 try:
-    make_release, pypi_version_str = check_outdated("orix", branch_version_str)
+    current_version = Version(branch_version_str)
+    pypi_txt= requests.get('https://pypi.python.org/pypi/orix/json').text
+    pypi_version_str = json.loads(pypi_txt)['info']['version']
+    pypi_version = Version(pypi_version_str)
+    make_release = current_version>pypi_version
 except ValueError as err:
     pattern = re.compile(r"([\d.]+)")  # Any "word" with decimal digits and dots
     matches = []
