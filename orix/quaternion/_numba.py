@@ -19,8 +19,8 @@
 
 """Numba functions used in the quaternion module."""
 
-# TODO: Move all Numba functions in the quaternion module here.
-# The idea is to in the future allow Numba to be an optional dependency.
+# TODO: Move all Numba functions in the quaternion module here. The
+# idea is to in the future allow Numba to be an optional dependency.
 
 import numba as nb
 import numpy as np

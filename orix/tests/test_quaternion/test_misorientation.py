@@ -41,7 +41,7 @@ class TestMisorientation:
         Misorientations are taken from the misorientation clustering
         user guide.
         """
-        m1 = Misorientation(
+        mori = Misorientation(
             [
                 [-0.8541, -0.5201, -0.0053, -0.0002],
                 [-0.8486, -0.5291, -0.0019, -0.0018],
@@ -51,7 +51,7 @@ class TestMisorientation:
             ],
             symmetry=(D6, D6),
         )
-        distance1 = m1.get_distance_matrix()
+        distance1 = mori.get_distance_matrix()
         assert np.allclose(np.diag(distance1), 0)
         expected = np.array(
             [
@@ -64,10 +64,10 @@ class TestMisorientation:
         )
         assert np.allclose(distance1, expected, atol=1e-4)
 
-        distance2 = m1.get_distance_matrix(degrees=True)
+        distance2 = mori.get_distance_matrix(degrees=True)
         assert np.allclose(np.rad2deg(distance1), distance2)
 
-        distance3 = m1.get_distance_matrix(lazy=False)
+        distance3 = mori.get_distance_matrix(lazy=False)
         assert np.allclose(distance3, distance1, atol=1e-4)
 
     def test_get_distance_matrix_shape(self):
@@ -83,23 +83,27 @@ class TestMisorientation:
         angle2 = m.get_distance_matrix(chunk_size=10, progressbar=False)
         assert np.allclose(angle1, angle2)
 
+    # Do not test Oh, as this takes ~4 GB
     @pytest.mark.parametrize("symmetry", _groups[:-1])
     def test_get_distance_matrix_equal_explicit_calculation(self, symmetry):
-        # do not test Oh, as this takes ~4 GB
-        m = Misorientation.random((5,))
-        m.symmetry = (symmetry, symmetry)
-        angle1 = m.get_distance_matrix()
-        s1, s2 = m.symmetry
+        mori = Misorientation.random(5)
+        mori.symmetry = (symmetry, symmetry)
+        angle1_dask = mori.get_distance_matrix()
+        angle1_numba = mori.get_distance_matrix(lazy=False)
+        s1, s2 = mori.symmetry
+
         # computation of mismisorientation
         # eq 6 in Johnstone et al. 2020
-        p1 = s1.outer(m).outer(s2)
-        p2 = s1.outer(~m).outer(s2)
+        p1 = s1.outer(mori).outer(s2)
+        p2 = s1.outer(~mori).outer(s2)
+
         # for identical symmetries this is equivalent to the old
         # distance function:
         # d = s2.outer(~m).outer(s1.outer(s1)).outer(m).outer(s2)
         p12 = p1.outer(p2)
         angle2 = p12.angle.min(axis=(0, 2, 3, 5))
-        assert np.allclose(angle1, angle2)
+        assert np.allclose(angle1_dask, angle2)
+        assert np.allclose(angle1_numba, angle2)
 
     def test_from_align_vectors(self):
         phase = Phase(
