@@ -33,11 +33,22 @@ Deprecated
 
 Fixed
 -----
-- ``CrystalMap.shape`` no longer recomputes unless the shape has changed since the last
-  check, avoiding unnecessary recomputes that slowed down some interaction.
 - (Mis)orientation reduction to the fundamental zone via ``reduce()`` now correctly
   applies the symmetries in the opposite order, from right to left,
   `s_end * g * s_start`, where `g` is a (mis)orientation.
+
+
+2026-06-06 - version 0.14.3
+===========================
+
+Fixed
+-----
+- ``DirectionColorKeyTSL.direction2color()`` now accepts ``Miller`` crystal vectors as
+  inputs (in addition to ``Vector3d``).
+- ``IPFColorKeyTSL`` now correctly only accepts a single ``Vector3d`` as the sample
+  direction.
+- ``CrystalMap.shape`` no longer recomputes unless the shape has changed since the last
+  check, avoiding unnecessary recomputes that slowed down some interaction.
 
 
 2026-02-24 - version 0.14.2
