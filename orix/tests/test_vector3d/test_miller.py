@@ -21,6 +21,7 @@ from diffpy.structure import Lattice, Structure
 import numpy as np
 import pytest
 
+from orix._utils._diffpy_structure_utils import get_cell_parms
 from orix.crystal_map import Phase
 from orix.quaternion import Orientation, symmetry
 from orix.vector import Miller
@@ -565,7 +566,7 @@ class TestDeGraefExamples:
         assert np.allclose(m7.round().hkl, [1, 1, 16])
 
         # Example 1.9: Reciprocal lattice parameters
-        assert np.allclose(lattice_recip.abcABG(), [2, 2, 1, 90, 90, 90])
+        assert np.allclose(get_cell_parms(lattice_recip), [2, 2, 1, 90, 90, 90])
 
         # Example 1.10, 1.11: Cross product of two directions
         m8 = Miller(uvw=[1, 1, 0], phase=TETRAGONAL_PHASE)

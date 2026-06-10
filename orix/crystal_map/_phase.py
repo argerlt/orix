@@ -32,7 +32,11 @@ from diffpy.structure.symmetryutilities import ExpandAsymmetricUnit
 import matplotlib.colors as mcolors
 import numpy as np
 
-from orix._utils._diffpy_structure_utils import get_space_group, place_in_lattice
+from orix._utils._diffpy_structure_utils import (
+    get_cell_parms,
+    get_space_group,
+    place_in_lattice,
+)
 from orix.plot._util.color import get_matplotlib_color
 from orix.quaternion.symmetry import (
     _EDAX_POINT_GROUP_ALIASES,
@@ -266,7 +270,7 @@ class Phase:
         """Return whether the crystal structure is hexagonal/trigonal or
         not.
         """
-        return np.allclose(self.structure.lattice.abcABG()[3:], [90, 90, 120])
+        return np.allclose(get_cell_parms(self.structure.lattice)[3:], [90, 90, 120])
 
     @property
     def a_axis(self) -> Miller:

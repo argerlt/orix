@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING
 from diffpy.structure import Lattice
 import numpy as np
 
+from orix._utils._diffpy_structure_utils import get_cell_parms
 from orix.vector.vector3d import Vector3d
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -871,8 +872,8 @@ class Miller(Vector3d):
         """
         same_symmetry = self.phase.point_group == other.phase.point_group
         same_lattice = np.allclose(
-            self.phase.structure.lattice.abcABG(),
-            other.phase.structure.lattice.abcABG(),
+            get_cell_parms(self.phase.structure.lattice),
+            get_cell_parms(other.phase.structure.lattice),
         )
         same_space = self.space == other.space
         compatible = same_symmetry * same_lattice * same_space

@@ -31,6 +31,7 @@ DIFFPY_STRUCTURE_VERSION = Version(__version__)
 
 # TODO: Remove these checks (and most likely this whole file) once
 # 3.4.0 is the minimal supported version
+
 if DIFFPY_STRUCTURE_VERSION >= Version("3.4.0"):
     from diffpy.structure.spacegroups import get_space_group
 else:
@@ -42,6 +43,13 @@ def place_in_lattice(structure: Structure, lattice: Lattice) -> Structure:
         return structure.place_in_lattice(lattice)
     else:
         return structure.placeInLattice(lattice)
+
+
+def get_cell_parms(lattice: Lattice) -> tuple[float, float, float, float, float, float]:
+    if DIFFPY_STRUCTURE_VERSION >= Version("3.4.0"):
+        return lattice.cell_parms()
+    else:
+        return lattice.abcABG()
 
 
 get_space_group: Callable[[str | int], SpaceGroup]
