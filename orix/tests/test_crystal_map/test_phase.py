@@ -17,11 +17,15 @@
 # along with orix. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from diffpy.structure import Atom, Lattice, Structure, loadStructure
+from diffpy.structure import Atom, Lattice, Structure
 import numpy as np
 import pytest
 
-from orix._utils._diffpy_structure_utils import get_cell_parms, place_in_lattice
+from orix._utils._diffpy_structure_utils import (
+    get_cell_parms,
+    load_structure,
+    place_in_lattice,
+)
 from orix.crystal_map import Phase
 from orix.crystal_map._phase import default_lattice, new_structure_matrix_from_alignment
 from orix.quaternion.symmetry import O, Symmetry
@@ -420,9 +424,9 @@ class TestPhase:
             lattice.base, [[15.5, 0, 0], [0, 4.05, 0], [-1.779, 0, 6.501]], atol=1e-3
         )
 
-    def test_from_cif_same_structure(self, cif_file):
+    def test_from_cif_same_structure(self, cif_file: str):
         phase1 = Phase.from_cif(cif_file)
-        structure = loadStructure(cif_file)
+        structure = load_structure(cif_file)
         phase2 = Phase(structure=structure)
         assert np.allclose(phase1.structure.lattice.base, phase2.structure.lattice.base)
         assert np.allclose(phase1.structure.xyz, phase2.structure.xyz)

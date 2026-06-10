@@ -19,7 +19,7 @@
 
 """Utilities for interfacing with diffpy.structure."""
 
-from typing import Callable
+from typing import Any, Callable
 
 from diffpy.structure import __version__
 from diffpy.structure.lattice import Lattice
@@ -33,8 +33,10 @@ DIFFPY_STRUCTURE_VERSION = Version(__version__)
 # 3.4.0 is the minimal supported version
 
 if DIFFPY_STRUCTURE_VERSION >= Version("3.4.0"):
+    from diffpy.structure import load_structure
     from diffpy.structure.spacegroups import get_space_group
 else:
+    from diffpy.structure import loadStructure as load_structure
     from diffpy.structure.spacegroups import GetSpaceGroup as get_space_group
 
 
@@ -53,8 +55,11 @@ def get_cell_parms(lattice: Lattice) -> tuple[float, float, float, float, float,
 
 
 get_space_group: Callable[[str | int], SpaceGroup]
+# Simplified signature for our current use case
+load_structure: Callable[[str], Structure]
 
 __all__ = [
     "get_space_group",
+    "load_structure",
     "place_in_lattice",
 ]
