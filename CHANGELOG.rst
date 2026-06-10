@@ -7,8 +7,8 @@ on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`__, and this project
 its best to adhere to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 
 
-Unreleased
-==========
+2026-06-10 - version 0.15.0
+===========================
 
 Added
 -----
@@ -24,12 +24,6 @@ Changed
   returning ``NotImplemented``.
 - Improved (faster and using less memory) non-lazy computation of misorientation angles
   from ``Orientation.with_angle_outer()``.
-
-Removed
--------
-
-Deprecated
-----------
 
 Fixed
 -----
