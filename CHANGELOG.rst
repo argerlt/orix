@@ -7,6 +7,31 @@ on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`__, and this project
 its best to adhere to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 
 
+2026-06-10 - version 0.15.0
+===========================
+
+Added
+-----
+- Non-lazy computation of dot products with
+  ``Misorientation.get_distance_matrix(lazy=True)``.
+  Currently opt-in, but will be the default in the next minor version.
+
+Changed
+-------
+- ``Miller.get_nearest()`` now raises a ``NotImplementedError`` rather than returning
+  ``NotImplemented``.
+- ``Mille.mean(use_symmetry=True)`` now raises a ``NotImplementedError`` rather than
+  returning ``NotImplemented``.
+- Improved (faster and using less memory) non-lazy computation of misorientation angles
+  from ``Orientation.with_angle_outer()``.
+
+Fixed
+-----
+- (Mis)orientation reduction to the fundamental zone via ``reduce()`` now correctly
+  applies the symmetries in the opposite order, from right to left,
+  `s_end * g * s_start`, where `g` is a (mis)orientation.
+
+
 2026-06-06 - version 0.14.3
 ===========================
 

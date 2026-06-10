@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -24,7 +24,7 @@ from typing import Any, Literal
 import warnings
 
 import dask.array as da
-from dask.diagnostics import ProgressBar
+from dask.diagnostics.progress import ProgressBar
 import matplotlib.figure as mfigure
 from matplotlib.gridspec import SubplotSpec
 import numpy as np
@@ -32,6 +32,7 @@ from scipy.spatial.transform import Rotation as SciPyRotation
 from tqdm import tqdm
 
 from orix._utils.deprecation import deprecated
+from orix.quaternion._numba import _mori_distance_matrix
 from orix.quaternion.orientation_region import OrientationRegion
 from orix.quaternion.rotation import Rotation
 from orix.quaternion.symmetry import (
@@ -436,33 +437,49 @@ class Misorientation(Rotation):
 
         Examples
         --------
+        >>> from orix.quaternion import Misorientation
         >>> from orix.quaternion.symmetry import C4, C2
-        >>> data = np.array([[0.5, 0.5, 0.5, 0.5], [0, 1, 0, 0]])
-        >>> M = Misorientation(data)
-        >>> M.symmetry = (C4, C2)
-        >>> M.reduce()
+        >>> mori = Misorientation([[0.5, 0.5, 0.5, 0.5], [0, 1, 0, 0]])
+        >>> mori.symmetry = (C4, C2)
+        >>> mori.reduce()
         Misorientation (2,) 4, 2
-        [[-0.7071  0.7071  0.      0.    ]
+        [[-0.7071 0.     -0.7071  0.    ]
         [ 0.      1.      0.      0.    ]]
-        """
-        Gl, Gr = self._symmetry
-        fz = OrientationRegion.from_symmetry(Gl, Gr)
-        symmetry_pairs = iproduct(Gl, Gr)
-        if verbose:
-            symmetry_pairs = tqdm(symmetry_pairs, total=Gl.size * Gr.size)
 
-        # There is one and only one combination of `symmetry_pairs` that
-        # moves an arbitrary rotation into fz. Apply the combinations
-        # iteratively to the outside quaternions until all are inside.
+        Notes
+        -----
+        The misorientation with the smallest rotation angle is the one
+        inside the misorientation fundamental zone (FZ, asymmetric
+        domain) given by the proper point groups of :attr:`symmetry`.
+        The definition of the FZ follows the procedure in section 5.3.1
+        in :cite:`martineau2020multivariate`.
+
+        An alternative description of finding the Rodrigues FZ is given
+        in :cite:`morawiec1996rodrigues`, which is the basis for
+        reduction of (mis)orientations in EMsoft.
+        """
+        # Combine symmetry elements of start and end of transformation
+        # given by the (mis)orientation
+        start, end = self._symmetry
+        symmetry_pairs = iproduct(start, end)
+        if verbose:
+            symmetry_pairs = tqdm(symmetry_pairs, total=start.size * end.size)
+
+        # Find the (mis)orientations which lie inside the Rodrigues
+        # (orientation) or MacKenzie (misorientation) fundamental zone
+        # (FZ), given by the symmetry elements. We loop over all
+        # symmetry pairs and rotate all (mis)orientations until all are
+        # inside the FZ.
+        fz = OrientationRegion.from_symmetry(s1=start, s2=end)
         reduced = self.__class__.identity(self.shape)
-        outside = np.ones(self.shape, dtype=bool)
-        for gl, gr in symmetry_pairs:
-            o_transformed = gl * self[outside] * gr
-            reduced[outside] = o_transformed
-            outside = ~(reduced < fz)
-            if not np.any(outside):
+        is_outside = np.ones(self.shape, dtype=bool)
+        for sym_start, sym_end in symmetry_pairs:
+            reduced[is_outside] = sym_end * self[is_outside] * sym_start
+            is_outside = ~(reduced < fz)
+            if not is_outside.any():
                 break
-        reduced._symmetry = (Gl, Gr)
+
+        reduced._symmetry = (start, end)
         return reduced
 
     def scatter(
@@ -568,6 +585,8 @@ class Misorientation(Rotation):
         chunk_size: int = 20,
         progressbar: bool = True,
         degrees: bool = False,
+        *,
+        lazy: bool = True,
     ) -> np.ndarray:
         r"""Return the symmetry reduced smallest angle of rotation
         transforming every misorientation in this instance to every
@@ -579,19 +598,24 @@ class Misorientation(Rotation):
             Number of misorientations per axis to include in each
             iteration of the computation. Default is 20. Increasing this
             might reduce the computation time at the cost of increased
-            memory use.
+            memory use. Only used if *lazy* is True.
         progressbar
             Whether to show a progressbar during computation. Default is
-            ``True``.
+            True. Only used if *lazy* is True.
         degrees
-            If ``True``, the angles are returned in degrees. Default is
-            ``False``.
+            If True, the angles are returned in degrees. Default is
+            False.
+        lazy
+            Whether to compute with Dask. Default is True. Setting False
+            should be both faster and use less memory.
+
+            False will be the default in the future.
 
         Returns
         -------
         angles
-            Misorientation angles in radians (``degrees=False``) or
-            degrees (``degrees=True``).
+            Misorientation angles in radians (*degrees* is False) or
+            degrees (*degrees* is True).
 
         Notes
         -----
@@ -617,43 +641,27 @@ class Misorientation(Rotation):
         Examples
         --------
         >>> from orix.quaternion import Misorientation, symmetry
-        >>> M = Misorientation.from_axes_angles([1, 0, 0], [0, 90], degrees=True)
-        >>> M.symmetry = (symmetry.D6, symmetry.D6)
-        >>> M.get_distance_matrix(progressbar=False, degrees=True)
+        >>> mori = Misorientation.from_axes_angles([1, 0, 0], [0, 90], degrees=True)
+        >>> mori.symmetry = (symmetry.D6, symmetry.D6)
+        >>> mori.get_distance_matrix(progressbar=False, degrees=True)
         array([[ 0., 90.],
                [90.,  0.]])
         """
         # Reduce symmetry operations to the unique ones
         symmetry = _get_unique_symmetry_elements(*self.symmetry)
 
-        # Perform "s_k m_i s_l s_k m_j" (see Notes)
-        M1 = symmetry.outer(self).outer(symmetry)
-        M2 = M1._outer_dask(~self, chunk_size=chunk_size)
-
-        # Perform last outer product and reduce to all dot products at
-        # the same time
-        warnings.filterwarnings("ignore", category=da.PerformanceWarning)
-        str1 = "abcdefghijklmnopqrstuvwxy"[: M2.ndim]
-        str2 = "z" + str1[-1]  # Last axis has shape (4,)
-        sum_over = f"{str1},{str2}->{str1[:-1] + str2[0]}"
-        all_dot_products = da.einsum(sum_over, M2, symmetry.data)
-
-        # Get highest dot product
-        axes = (0, self.ndim + 1, 2 * self.ndim + 2)
-        dot_products = da.max(abs(all_dot_products), axis=axes)
-
-        # Round because some dot products are slightly above 1
-        dot_products = da.round(dot_products, 12)
-
-        # Calculate disorientation angles
-        angles_dask = da.arccos(2 * dot_products**2 - 1)
-        angles_dask = da.nan_to_num(angles_dask)
-        angles = np.zeros(angles_dask.shape)
-        if progressbar:
-            with ProgressBar():
-                da.store(sources=angles_dask, targets=angles)
+        if lazy:
+            angles = _get_distance_matrix_dask(
+                mori=self,
+                symmetry=symmetry,
+                chunk_size=chunk_size,
+                progressbar=progressbar,
+            )
         else:
-            da.store(sources=angles_dask, targets=angles)
+            qu = np.ascontiguousarray(self.unit.data.reshape(-1, 4), dtype=np.float64)
+            sym_ops = np.ascontiguousarray(symmetry.data, dtype=np.float64)
+            angles = _mori_distance_matrix(qu, sym_ops)
+            angles = angles.reshape(self.shape + self.shape)
 
         if degrees:
             angles = np.rad2deg(angles)
@@ -663,3 +671,41 @@ class Misorientation(Rotation):
     def inv(self) -> Misorientation:
         r"""Return the inverse misorientations :math:`M^{-1}`."""
         return self.__invert__()
+
+
+def _get_distance_matrix_dask(
+    mori: Misorientation,
+    symmetry: Symmetry,
+    chunk_size: int,
+    progressbar: bool,
+) -> np.ndarray:
+    # Perform "s_k m_i s_l s_k m_j" (see Notes)
+    M1 = symmetry.outer(mori).outer(symmetry)
+    M2 = M1._outer_dask(~mori, chunk_size=chunk_size)
+
+    # Perform last outer product and reduce to all dot products at
+    # the same time
+    warnings.filterwarnings("ignore", category=da.PerformanceWarning)
+    str1 = "abcdefghijklmnopqrstuvwxy"[: M2.ndim]
+    str2 = "z" + str1[-1]  # Last axis has shape (4,)
+    sum_over = f"{str1},{str2}->{str1[:-1] + str2[0]}"
+    all_dot_products = da.einsum(sum_over, M2, symmetry.data)
+
+    # Get highest dot product
+    axes = (0, mori.ndim + 1, 2 * mori.ndim + 2)
+    dot_products = da.max(abs(all_dot_products), axis=axes)
+
+    # Round because some dot products are slightly above 1
+    dot_products = da.round(dot_products, 12)
+
+    # Calculate disorientation angles
+    angles_dask = da.arccos(2 * dot_products**2 - 1)
+    angles_dask = da.nan_to_num(angles_dask)
+    angles = np.zeros(angles_dask.shape)
+    if progressbar:
+        with ProgressBar():
+            da.store(sources=angles_dask, targets=angles)
+    else:
+        da.store(sources=angles_dask, targets=angles)
+
+    return angles

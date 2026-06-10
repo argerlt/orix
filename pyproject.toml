@@ -46,11 +46,12 @@ all = [  # NB! Update constants.py if this list is updated!
 ]
 doc = [
     "ipykernel",  # Used by nbsphinx to execute notebooks
+    "matplotlib-scalebar",
     "memory_profiler",
     "nbconvert                      >= 7.16.4",
     "nbsphinx                       >= 0.7",
     # Restriction due to https://github.com/pyxem/orix/issues/570
-    "numpydoc != 1.9.0",
+    "numpydoc                       != 1.9.0",
     "pydata-sphinx-theme",
     "scikit-image",
     "scikit-learn",
