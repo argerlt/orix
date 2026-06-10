@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -21,6 +21,7 @@ from diffpy.structure import Atom, Lattice, Structure, loadStructure
 import numpy as np
 import pytest
 
+from orix._utils._diffpy_structure_utils import place_in_lattice
 from orix.crystal_map import Phase
 from orix.crystal_map._phase import default_lattice, new_structure_matrix_from_alignment
 from orix.quaternion.symmetry import O, Symmetry
@@ -563,7 +564,7 @@ class TestPhase:
         # Check atom positions in ORIGINAL lattice alignment
         # Doing the check in orix's alignment makes independently computing expected sites difficult
         s = exp.structure.copy()
-        s.placeInLattice(Lattice(base=phase._diffpy_lattice))
+        s = place_in_lattice(s, Lattice(base=phase._diffpy_lattice))
         # Use set to avoid having to ensure the order is the same
         assert set(tuple(xyz.round(8).tolist()) for xyz in s.xyz) == set(
             expected_atom_positions
@@ -574,7 +575,7 @@ class TestPhase:
         assert np.array_equal(base, exp2.structure.lattice.base)
         assert len(exp2.structure) == len(expected_atom_positions)
         s = exp2.structure.copy()
-        s.placeInLattice(Lattice(base=phase._diffpy_lattice))
+        s = place_in_lattice(s, Lattice(base=phase._diffpy_lattice))
         assert set(tuple(xyz.round(8).tolist()) for xyz in s.xyz) == set(
             expected_atom_positions
         )

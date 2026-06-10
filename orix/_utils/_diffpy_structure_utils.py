@@ -22,20 +22,31 @@
 from typing import Callable
 
 from diffpy.structure import __version__
+from diffpy.structure.lattice import Lattice
 from diffpy.structure.spacegroups import SpaceGroup
+from diffpy.structure.structure import Structure
 from packaging.version import Version
 
 DIFFPY_STRUCTURE_VERSION = Version(__version__)
 
 # TODO: Remove these checks (and most likely this whole file) once
 # 3.4.0 is the minimal supported version
-if Version(__version__) >= Version("3.4.0"):
+if DIFFPY_STRUCTURE_VERSION >= Version("3.4.0"):
     from diffpy.structure.spacegroups import get_space_group
 else:
     from diffpy.structure.spacegroups import GetSpaceGroup as get_space_group
+
+
+def place_in_lattice(structure: Structure, lattice: Lattice) -> Structure:
+    if DIFFPY_STRUCTURE_VERSION >= Version("3.4.0"):
+        return structure.place_in_lattice(lattice)
+    else:
+        return structure.placeInLattice(lattice)
+
 
 get_space_group: Callable[[str | int], SpaceGroup]
 
 __all__ = [
     "get_space_group",
+    "place_in_lattice",
 ]

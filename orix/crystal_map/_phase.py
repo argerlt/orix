@@ -32,7 +32,7 @@ from diffpy.structure.symmetryutilities import ExpandAsymmetricUnit
 import matplotlib.colors as mcolors
 import numpy as np
 
-from orix._utils._diffpy_structure_utils import get_space_group
+from orix._utils._diffpy_structure_utils import get_space_group, place_in_lattice
 from orix.plot._util.color import get_matplotlib_color
 from orix.quaternion.symmetry import (
     _EDAX_POINT_GROUP_ALIASES,
@@ -143,7 +143,7 @@ class Phase:
         new_value = value.copy()
 
         # Ensure atom positions are expressed in the new basis
-        new_value.placeInLattice(Lattice(base=new_matrix))
+        new_value = place_in_lattice(new_value, Lattice(base=new_matrix))
 
         # Store old lattice for expand_asymmetric_unit
         self._diffpy_lattice = old_matrix
@@ -402,7 +402,9 @@ class Phase:
 
         # Ensure atom positions are expressed in diffpy's convention
         diffpy_structure = self.structure.copy()
-        diffpy_structure.placeInLattice(Lattice(base=self._diffpy_lattice))
+        diffpy_structure = place_in_lattice(
+            diffpy_structure, Lattice(base=self._diffpy_lattice)
+        )
         xyz = diffpy_structure.xyz
         diffpy_structure.clear()
 
