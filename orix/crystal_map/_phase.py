@@ -26,7 +26,6 @@ from pathlib import Path
 import warnings
 
 from diffpy.structure import Lattice, Structure
-from diffpy.structure.parsers import p_cif
 from diffpy.structure.spacegroups import SpaceGroup
 from diffpy.structure.symmetryutilities import ExpandAsymmetricUnit
 import matplotlib.colors as mcolors
@@ -34,6 +33,7 @@ import numpy as np
 
 from orix._utils._diffpy_structure_utils import (
     get_cell_parms,
+    get_parser_and_structure_from_cif_file,
     get_space_group,
     place_in_lattice,
 )
@@ -355,14 +355,13 @@ class Phase:
         file format.
         """
         path = Path(filename)
-        parser = p_cif.P_cif()
-        name = path.stem
-        structure = parser.parseFile(str(path))
+        parser, structure = get_parser_and_structure_from_cif_file(str(path))
         try:
             space_group = parser.spacegroup.number
         except AttributeError:  # pragma: no cover
             space_group = None
             warnings.warn(f"Could not read space group from CIF file {path!r}")
+        name = path.stem
         return cls(name, space_group, structure=structure)
 
     def deepcopy(self) -> Phase:

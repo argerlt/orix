@@ -19,10 +19,12 @@
 
 """Utilities for interfacing with diffpy.structure."""
 
-from typing import Any, Callable
+from functools import cache
+from typing import Callable
 
 from diffpy.structure import __version__
 from diffpy.structure.lattice import Lattice
+from diffpy.structure.parsers import p_cif
 from diffpy.structure.spacegroups import SpaceGroup
 from diffpy.structure.structure import Structure
 from packaging.version import Version
@@ -54,12 +56,22 @@ def get_cell_parms(lattice: Lattice) -> tuple[float, float, float, float, float,
         return lattice.abcABG()
 
 
+def get_parser_and_structure_from_cif_file(fname: str) -> tuple[p_cif.P_cif, Structure]:
+    parser = p_cif.P_cif()
+    if DIFFPY_STRUCTURE_VERSION >= Version("3.4.0"):
+        structure = parser.parse_file(fname)
+    else:
+        structure = parser.parseFile(fname)
+    return parser, structure
+
+
 get_space_group: Callable[[str | int], SpaceGroup]
 # Simplified signature for our current use case
 load_structure: Callable[[str], Structure]
 
 __all__ = [
     "get_space_group",
+    "get_parser_and_structure_from_cif_file",
     "load_structure",
     "place_in_lattice",
 ]
