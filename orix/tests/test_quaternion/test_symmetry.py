@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -19,11 +19,11 @@
 
 from copy import deepcopy
 
-from diffpy.structure.spacegroups import GetSpaceGroup
 from matplotlib import pyplot as plt
 import numpy as np
 import pytest
 
+from orix._utils._diffpy_structure_utils import get_space_group
 from orix.quaternion import Rotation, Symmetry, get_point_group
 
 # fmt: off
@@ -444,7 +444,7 @@ def test_get_point_group():
         proper_pg = get_point_group(sg_number, proper=True)
         assert proper_pg in [C1, C2, C3, C4, C6, D2, D3, D4, D6, O, T]
 
-        sg = GetSpaceGroup(sg_number)
+        sg = get_space_group(sg_number)
         pg = get_point_group(sg_number, proper=False)
         assert proper_pg == spacegroup2pointgroup_dict[sg.point_group_name]["proper"]
         assert pg == spacegroup2pointgroup_dict[sg.point_group_name]["improper"]

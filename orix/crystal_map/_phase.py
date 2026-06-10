@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -27,11 +27,12 @@ import warnings
 
 from diffpy.structure import Lattice, Structure
 from diffpy.structure.parsers import p_cif
-from diffpy.structure.spacegroups import GetSpaceGroup, SpaceGroup
+from diffpy.structure.spacegroups import SpaceGroup
 from diffpy.structure.symmetryutilities import ExpandAsymmetricUnit
 import matplotlib.colors as mcolors
 import numpy as np
 
+from orix._utils._diffpy_structure_utils import get_space_group
 from orix.plot._util.color import get_matplotlib_color
 from orix.quaternion.symmetry import (
     _EDAX_POINT_GROUP_ALIASES,
@@ -207,7 +208,7 @@ class Phase:
     def space_group(self, value: int | SpaceGroup | None) -> None:
         """Set the space group."""
         if isinstance(value, int):
-            value = GetSpaceGroup(value)
+            value = get_space_group(value)
         if not isinstance(value, SpaceGroup) and value is not None:
             raise ValueError(
                 f"{value!r} must be of type {SpaceGroup}, an integer 1-230, or None"

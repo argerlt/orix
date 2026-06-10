@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -17,12 +17,12 @@
 # along with orix. If not, see <http://www.gnu.org/licenses/>.
 #
 
-from diffpy.structure.spacegroups import GetSpaceGroup
 from h5py import File
 import numpy as np
 import pytest
 
 from orix import __version__ as orix_version
+from orix._utils._diffpy_structure_utils import get_space_group
 from orix.crystal_map import CrystalMap, Phase
 import orix.io as oio
 from orix.io.plugins.orix_hdf5 import (
@@ -125,7 +125,7 @@ class TestOrixHDF5Plugin:
         phase_dict1 = phase2dict(phase)
         assert phase_dict1["space_group"] == sg100
 
-        sg200 = GetSpaceGroup(200)
+        sg200 = get_space_group(200)
         phase.space_group = sg200
         phase_dict2 = phase2dict(phase)
         assert phase_dict2["space_group"] == sg200.number

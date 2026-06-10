@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -21,10 +21,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
-from diffpy.structure.spacegroups import GetSpaceGroup
 import matplotlib.figure as mfigure
 import numpy as np
 
+from orix._utils._diffpy_structure_utils import get_space_group
 from orix.quaternion.rotation import Rotation
 from orix.vector.vector3d import Vector3d
 
@@ -815,8 +815,8 @@ def get_point_group(space_group_number: int, proper: bool = False) -> Symmetry:
     >>> pgO.name
     '432'
     """
-    spg = GetSpaceGroup(space_group_number)
-    pgn = spg.point_group_name
+    spg = get_space_group(space_group_number)
+    pgn: str = spg.point_group_name
     if proper:
         return spacegroup2pointgroup_dict[pgn]["proper"]
     else:
