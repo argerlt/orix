@@ -19,7 +19,6 @@
 
 """Utilities for interfacing with diffpy.structure."""
 
-from functools import cache
 from typing import Callable
 
 from diffpy.structure import __version__
