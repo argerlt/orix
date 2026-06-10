@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -717,9 +717,9 @@ class Miller(Vector3d):
         m.coordinate_format = self.coordinate_format
         return m
 
-    def get_nearest(self, *args) -> NotImplemented:
+    def get_nearest(self, *args) -> None:
         """NotImplemented."""
-        return NotImplemented
+        raise NotImplementedError
 
     def mean(self, use_symmetry: bool = False) -> Miller:
         """Return the mean vector of the set of vectors.
@@ -736,7 +736,7 @@ class Miller(Vector3d):
         """
         # TODO: Allow using symmetry by projecting to fundamental sector
         if use_symmetry:
-            return NotImplemented
+            raise NotImplementedError
         m = self.__class__(xyz=super().mean().data, phase=self.phase)
         m.coordinate_format = self.coordinate_format
         return m

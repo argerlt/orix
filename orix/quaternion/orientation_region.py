@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -126,9 +126,10 @@ class OrientationRegion(Rotation):
     # ------------------------ Dunder methods ------------------------ #
 
     def __gt__(self, other: OrientationRegion) -> np.ndarray:
-        """Overridden greater than method. Applying this to an
-        Orientation will return only those orientations that lie within
-        the OrientationRegion.
+        """Overridden greater than method.
+
+        Applying this to an orientation will return only those that lie
+        within the region.
         """
         c = Quaternion(self).dot_outer(Quaternion(other))
         inside = np.logical_or(
@@ -141,14 +142,20 @@ class OrientationRegion(Rotation):
 
     @classmethod
     def from_symmetry(cls, s1: Symmetry, s2: Symmetry = C1) -> OrientationRegion:
-        """The set of unique (mis)orientations of a symmetrical object.
+        """Return the set of unique (mis)orientations of a symmetrical
+        object.
 
         Parameters
         ----------
         s1
             First symmetry.
         s2
-            Second symmetry.
+            Second symmetry. Default is C1 (the identity).
+
+        Returns
+        -------
+        region
+            The orientation region.
         """
         s1, s2 = get_proper_groups(s1, s2)
         large_cell_normals = _get_large_cell_normals(s1, s2)
@@ -156,23 +163,21 @@ class OrientationRegion(Rotation):
         fz = disjoint.fundamental_zone()
         fz_normals = Rotation.from_axes_angles(fz, np.pi)
         normals = Rotation(np.concatenate([large_cell_normals.data, fz_normals.data]))
-        orientation_region = cls(normals)
-        vertices = orientation_region.vertices()
+        region = cls(normals)
+        vertices = region.vertices()
         if vertices.size:
-            orientation_region = orientation_region[
-                np.any(np.isclose(orientation_region.dot_outer(vertices), 0), axis=1)
-            ]
-        return orientation_region
+            region = region[np.any(np.isclose(region.dot_outer(vertices), 0), axis=1)]
+        return region
 
     # --------------------- Other public methods --------------------- #
 
     def vertices(self) -> Rotation:
-        """Return the vertices of the asymmetric domain.
+        """Return the vertices of the orientation region.
 
         Returns
         -------
         rot
-            Domain vertices.
+            Orientation region vertices.
         """
         normal_combinations = list(itertools.combinations(self, 3))
         if len(normal_combinations) < 1:
@@ -190,6 +195,14 @@ class OrientationRegion(Rotation):
         return r[surface]
 
     def faces(self) -> list[Rotation]:
+        """Return the faces of the orientation region.
+
+        Returns
+        -------
+        faces
+            List of sets of rotations, each set describing a face of the
+            region.
+        """
         normals = Rotation(self)
         vertices = self.vertices()
         faces = []
@@ -199,7 +212,14 @@ class OrientationRegion(Rotation):
         return faces
 
     def get_plot_data(self) -> Rotation:
-        """Suitable Rotations for the construction of a wireframe."""
+        """Return suitable rotations for the construction of a wireframe
+        delineating the borders of the region.
+
+        Returns
+        -------
+        rot
+            Rotations delineating the borders of the region.
+        """
         from orix.vector import Vector3d
 
         # Get a grid of vector directions
