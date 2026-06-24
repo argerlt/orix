@@ -672,6 +672,104 @@ class Misorientation(Rotation):
         r"""Return the inverse misorientations :math:`M^{-1}`."""
         return self.__invert__()
 
+    def mean(
+            self, 
+            weights: np.ndarray| None = None,
+            ignore_symmetry: bool = False,
+            verbose: bool = False,
+            use_laue: bool = False,
+            ) -> Misorientation:
+        """Return the mean (mis)orientation.
+            
+        Parameters
+        ----------
+        weights
+            An optional array of weights for calculating a weighted
+            average instead of the unweighted mean. Must be the same
+            size as the quaternion array.
+
+        ignore_symmetry
+            If True, ignore all symmetry and return the mean
+            rotation. Default is ``False``.
+
+        verbose
+            If True, prints progress bars during long computations
+            and reports changes to symmetry. Default is False.
+
+        use_laue
+            If True, improper symmetry groups will be replaced with
+            Laue groups. Otherwise, improper symmetry elements will
+            be ignored. See Notes for details. Default is False.
+
+        Returns
+        -------
+        mean
+            Mean misorientation.
+
+        Notes
+        -----
+        This method uses the Frobenius norm of rotation space to
+        define a mean for rotations, as given in equations 12 and 13
+        of :cite:`markley_averaging_2007`. Refer to
+        :func:`orix.quaternion.Quaternion.mean` for details.
+        
+        To account for symmetry, the following proceedure is used:
+
+            1) Misorientations are reduced to the fundamental zone.
+            2) The rough mean is calculated.
+            3) Misorientations with equivalent values closer to the
+               rough mean are updated to the nearby value
+            4) The precise mean is recalculated.
+
+        if ``ignore_symmetry`` is False, steps 3 and 4 are ignored.
+
+        Since there is no pure rotation that can align an inverted
+        reference frame with an uinverted one, the concept of a
+        Frobenius norm breaks down for symmetry groups with inversion
+        symmetry. To compensate, improper groups can either add
+        symmetry to become a Laue group (for example, C2v(mm2)
+        becomes D2h(mmm)) or remove the inversion elements (for 
+        example, C2v(mm2) becomes C2(112)). the ``use_laue`` variable
+        toggles between these choices, with the proper subgroup as
+        the default.
+        
+        """
+        if verbose:
+            print("reducing to fundamental zone...")
+        mis = self.reduce(verbose=verbose)
+        rots = Rotation(mis.data)
+        rough_mean = rots.mean(weights=weights)
+        if ignore_symmetry is True:
+            return rough_mean
+
+        max_dp = np.zeros(rots.shape, dtype=float)
+        old_start, old_end = self._symmetry
+        if use_laue:
+            start = old_start.laue
+            end = old_end.laue
+        else:
+            start = old_start.proper_subgroup
+            end = old_end.proper_subgroup
+        if verbose:
+            if start.name ~= old_start.name:
+                print("starting symmetry changed from {} to {}".format(
+                    old_start,start))
+            if end.name ~= old_end.name:
+                print("starting symmetry changed from {} to {}".format(
+                    old_end,end))
+            print("checking for closer equivalent representations...")
+        symmetry_pairs = iproduct(start, end)
+        if verbose:
+            symmetry_pairs = tqdm(symmetry_pairs, total=np.prod([x.size for x in mis._symmetry]))
+
+        for start, end in symmetry_pairs:
+            candidates = end * rots * start
+            dp = np.abs(candidates.dot(rough_mean))
+            mis.data[dp>max_dp,:] = candidates.data[dp>max_dp,:]
+            max_dp[dp>max_dp] = dp[dp>max_dp]
+
+        fine_mean = Rotation(mis.data).mean(weights=weights)
+        return self.__class__(fine_mean,symmetry=self._symmetry)
 
 def _get_distance_matrix_dask(
     mori: Misorientation,
