@@ -1131,8 +1131,28 @@ class Quaternion(Object3d):
 
         Notes
         -----
-        The method used here corresponds to Equation (13) in
-        https://arc.aiaa.org/doi/pdf/10.2514/1.28949.
+        The method used here corresponds to equations 12 and 13 in
+        :cite:`markley_averaging_2007`, which simplifies to the
+        following two equations:
+
+            .. math::
+
+                M = \sum_{n=1}^{n}{wq_i \cdot q_i^T}
+                
+                q_{mean} = \max_{q \in SO(3)} \left( q^T \cdot M \cdot q \right)
+
+        Which gives the Frobenius norm of rotation space (SO(3)). This
+        is different from the following Euclidean-style equation
+        occasionally used elsewhere in crystallography:
+            
+            .. math::
+
+                q_{mean} = norm\left( \frac{\sum_{n=1}^{n}{wq_i }}{n} \right)
+
+        Which gives the Frobenius norm of quaternion space (SU(2)).
+        These are roughly identical for closely clustered quaternions,
+        but as explained in :cite:`markley_averaging_2007`,
+        increasingly deviate as the spread in the data increases.
         """
         Q = self.flatten().data.T
         if weights is not None:
