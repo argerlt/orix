@@ -12,6 +12,10 @@ its best to adhere to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>
 
 Added
 -----
+- ``Misorientation.mean()``.
+-  A ``weight`` option for ``Quaternion.mean()`` to calculate weighted averages.
+  ``Misorientation.get_distance_matrix(lazy=True)``.
+  Currently opt-in, but will be the default in the next minor version.
 - Non-lazy computation of dot products with
   ``Misorientation.get_distance_matrix(lazy=True)``.
   Currently opt-in, but will be the default in the next minor version.
