@@ -696,15 +696,15 @@ class Misorientation(Rotation):
             If True, prints progress bars during long computations
             and reports changes to symmetry. Default is False.
 
-        use_laue
-            If True, improper symmetry groups will be replaced with
-            Laue groups. Otherwise, improper symmetry elements will
-            be ignored. See Notes for details. Default is False.
+        ignore_improper
+            If True, only proper misorientations will be used to
+            calculate the mean. See Notes for details. Default is
+            True.
 
         Returns
         -------
         mean
-            Mean misorientation.
+            Mean (mis)orientation.
 
         Notes
         -----
@@ -721,18 +721,18 @@ class Misorientation(Rotation):
                rough mean are updated to the nearby value
             4) The precise mean is recalculated.
 
-        if ``ignore_symmetry`` is False, steps 3 and 4 are ignored.
+        if ``ignore_symmetry`` is True, steps 3 and 4 are skipped,
+        and the mean is given as a Rotation to signify the loss of
+        symmetry information.
 
         Since there is no pure rotation that can align an inverted
         reference frame with an uinverted one, the concept of a
-        Frobenius norm breaks down for symmetry groups with inversion
-        symmetry. To compensate, improper groups can either add
-        symmetry to become a Laue group (for example, C2v(mm2)
-        becomes D2h(mmm)) or remove the inversion elements (for 
-        example, C2v(mm2) becomes C2(112)). the ``use_laue`` variable
-        toggles between these choices, with the proper subgroup as
-        the default.
-        
+        Frobenius norm does not apply to improper rotations. To
+        address this, inverted elements can either be ignored, or
+        treated as proper elements when calculating angular deviation.
+        By default, all improper elements are ignored, though an
+        improper element with a proper symmetrically-equivalent
+        representation would still be included.
         """
         if ignore_symmetry is True:
             # convert to a rotation to emphasize loss of symmetry information
@@ -762,15 +762,24 @@ class Misorientation(Rotation):
         symmetry_pairs = iproduct(start, end)
         if verbose:
             print("checking for closer equivalent representations...")
-            s = np.prod([x.size for x in mis._symmetry]
+            s = np.prod([x.size for x in mis._symmetry])
             symmetry_pairs = tqdm(symmetry_pairs, total=s)
         max_dp = np.zeros(rots.shape, dtype=float)
         for start, end in symmetry_pairs:
             candidates = end * rots * start
             dp = np.abs(candidates.dot(rough_mean))
+            if ignore_improper:
+                dp[candidates.improper]=0
             mis.data[dp>max_dp,:] = candidates.data[dp>max_dp,:]
             max_dp[dp>max_dp] = dp[dp>max_dp]
-
+        if ignore_improper:
+            if np.max(max_dp) <= 0:
+                raise ValueError(
+                    "A mean cannot be calculated as all elements are " +
+                    "improper. Either use a crystal symmetry with " + 
+                    "inversion, or set 'ignore_improper' to False")
+            mis = mis[max_dp>0]
+            
         fine_mean = Rotation(mis.data).mean(weights=weights)
         return self.__class__(fine_mean,symmetry=self._symmetry)
 
