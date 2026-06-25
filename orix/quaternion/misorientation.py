@@ -677,7 +677,7 @@ class Misorientation(Rotation):
             weights: np.ndarray| None = None,
             ignore_symmetry: bool = False,
             verbose: bool = False,
-            ignore_improper: bool = True,
+            use_improper: bool = False,
             ) -> Misorientation:
         """Return the mean (mis)orientation.
             
@@ -696,10 +696,10 @@ class Misorientation(Rotation):
             If True, prints progress bars during long computations
             and reports changes to symmetry. Default is False.
 
-        ignore_improper
-            If True, only proper misorientations will be used to
-            calculate the mean. See Notes for details. Default is
-            True.
+        use_improper
+            If True, improper representations of misorientations will
+            be included in the calculation of the mean. See Notes
+            for details. Default is False.
 
         Returns
         -------
@@ -746,6 +746,7 @@ class Misorientation(Rotation):
         mis = self.reduce(verbose=verbose)
         rots = Rotation(mis.data)
         rough_mean = rots.mean(weights=weights)
+        rots.improper = mis.improper
         max_dp = np.zeros(rots.shape, dtype=float)
         symmetry_pairs = iproduct(start, end)
         if verbose:
@@ -755,11 +756,11 @@ class Misorientation(Rotation):
         for start, end in symmetry_pairs:
             candidates = end * rots * start
             dp = np.abs(candidates.dot(rough_mean))
-            if ignore_improper:
+            if use_improper is False:
                 dp[candidates.improper]=0
             mis.data[dp>max_dp,:] = candidates.data[dp>max_dp,:]
             max_dp[dp>max_dp] = dp[dp>max_dp]
-        if ignore_improper:
+        if use_improper is False:
             if np.max(max_dp) <= 0:
                 raise ValueError(
                     "A mean cannot be calculated as all elements are " +
