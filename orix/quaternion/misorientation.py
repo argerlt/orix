@@ -677,7 +677,7 @@ class Misorientation(Rotation):
             weights: np.ndarray| None = None,
             ignore_symmetry: bool = False,
             verbose: bool = False,
-            use_laue: bool = False,
+            ignore_improper: bool = True,
             ) -> Misorientation:
         """Return the mean (mis)orientation.
             
@@ -734,34 +734,37 @@ class Misorientation(Rotation):
         the default.
         
         """
+        if ignore_symmetry is True:
+            # convert to a rotation to emphasize loss of symmetry information
+            return Rotation(self.data).mean(weights=weights) 
+
+        old_start = Rotation(self._symmetry[0])
+        old_end = Rotation(self._symmetry[1])
+        if ignore_improper:
+            start = old_start[~old_start.improper]
+            end = old_end[~old_end.improper]
+        else:
+            start = old_start
+            end = old_end
         if verbose:
+            if len(start) !=len(old_start):
+                print(
+                    "starting symmetry reduced from {} to {}".format(
+                    len(old_start),len(start)))
+            # if len(end) =len(old_end):
+                print(
+                    "starting symmetry reduced from {} to {}".format(
+                    len(old_end),len(end)))
             print("reducing to fundamental zone...")
         mis = self.reduce(verbose=verbose)
         rots = Rotation(mis.data)
         rough_mean = rots.mean(weights=weights)
-        if ignore_symmetry is True:
-            return rough_mean
-
-        max_dp = np.zeros(rots.shape, dtype=float)
-        old_start, old_end = self._symmetry
-        if use_laue:
-            start = old_start.laue
-            end = old_end.laue
-        else:
-            start = old_start.proper_subgroup
-            end = old_end.proper_subgroup
-        if verbose:
-            if start.name ~= old_start.name:
-                print("starting symmetry changed from {} to {}".format(
-                    old_start,start))
-            if end.name ~= old_end.name:
-                print("starting symmetry changed from {} to {}".format(
-                    old_end,end))
-            print("checking for closer equivalent representations...")
         symmetry_pairs = iproduct(start, end)
         if verbose:
-            symmetry_pairs = tqdm(symmetry_pairs, total=np.prod([x.size for x in mis._symmetry]))
-
+            print("checking for closer equivalent representations...")
+            s = np.prod([x.size for x in mis._symmetry]
+            symmetry_pairs = tqdm(symmetry_pairs, total=s)
+        max_dp = np.zeros(rots.shape, dtype=float)
         for start, end in symmetry_pairs:
             candidates = end * rots * start
             dp = np.abs(candidates.dot(rough_mean))
