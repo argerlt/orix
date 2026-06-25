@@ -185,16 +185,7 @@ class TestMisorientation:
 
         M3 = Misorientation.random(symmetry=(Oh, D6))
         assert M3.symmetry == (Oh, D6)
-
-    # TODO: Remove after v0.15.0 is released
-    def test_map_into_symmetry_reduced_zone_deprecation_message(self):
-        M = Misorientation.random()
-        M.symmetry = (Oh, Oh)
-        with pytest.warns(
-            VisibleDeprecationWarning,
-            match=(
-                r"Function `map_into_symmetry_reduced_zone\(\)` is deprecated and will "
-                r"be removed in version 0.15. Use `reduce\(\)` instead."
-            ),
-        ):
-            _ = M.map_into_symmetry_reduced_zone()
+    
+    def test_mean(self):
+        a = 1
+        
