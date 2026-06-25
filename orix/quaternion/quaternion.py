@@ -1114,16 +1114,16 @@ class Quaternion(Object3d):
         dots = np.tensordot(self.data, other.data, axes=(-1, -1))
         return dots
 
-    def mean(self, weights: np.ndarray| None = None) -> Quaternion:
+    def mean(self, weights: np.ndarray | None = None) -> Quaternion:
         r"""Return the mean quaternion.
-            
+
         Parameters
         ----------
         weights
             An optional array of weights for calculating a weighted
             average instead of the unweighted mean. Must be the same
             size as the quaternion array.
-        
+
         Returns
         -------
         quat_mean
@@ -1138,13 +1138,13 @@ class Quaternion(Object3d):
             .. math::
 
                 M = \sum_{n=1}^{n}{wq_i \cdot q_i^T}
-                
+
                 q_{mean} = \max_{q \in SO(3)} \left( q^T \cdot M \cdot q \right)
 
         Which gives the Frobenius norm of rotation space (SO(3)). This
         is different from the following Euclidean-style equation
         occasionally used elsewhere in crystallography:
-            
+
             .. math::
 
                 q_{mean} = norm\left( \frac{\sum_{n=1}^{n}{wq_i }}{n} \right)
@@ -1156,15 +1156,15 @@ class Quaternion(Object3d):
         """
         Q = self.flatten().data.T
         if weights is not None:
-            weights =np.asanyarray(weights).flatten()[:,np.newaxis]
-            QQ = Q.dot(weights[:,np.newaxis]*Q.T)
+            weights = np.asanyarray(weights).flatten()[:, np.newaxis]
+            QQ = Q.dot(weights[:, np.newaxis] * Q.T)
         else:
             QQ = Q.dot(Q.T)
         w, v = np.linalg.eig(QQ)
-        v_mean = v[:,np.argmax(w)]
+        v_mean = v[:, np.argmax(w)]
         # flip if necessary.
-        if v_mean[0] <0:
-            v_mean = v_mean*-1
+        if v_mean[0] < 0:
+            v_mean = v_mean * -1
         return self.__class__(v_mean)
 
     def outer(

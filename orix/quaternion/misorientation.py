@@ -673,14 +673,14 @@ class Misorientation(Rotation):
         return self.__invert__()
 
     def mean(
-            self, 
-            weights: np.ndarray| None = None,
-            ignore_symmetry: bool = False,
-            verbose: bool = False,
-            use_improper: bool = False,
-            ) -> Misorientation:
+        self,
+        weights: np.ndarray | None = None,
+        ignore_symmetry: bool = False,
+        verbose: bool = False,
+        use_improper: bool = False,
+    ) -> Misorientation:
         """Return the mean (mis)orientation.
-            
+
         Parameters
         ----------
         weights
@@ -712,7 +712,7 @@ class Misorientation(Rotation):
         define a mean for rotations, as given in equations 12 and 13
         of :cite:`markley_averaging_2007`. Refer to
         :func:`orix.quaternion.Quaternion.mean` for details.
-        
+
         To account for symmetry, the following proceedure is used:
 
             1) Misorientations are reduced to the fundamental zone.
@@ -736,7 +736,7 @@ class Misorientation(Rotation):
         """
         if ignore_symmetry is True:
             # convert to a rotation to emphasize loss of symmetry information
-            return Rotation(self.data).mean(weights=weights) 
+            return Rotation(self.data).mean(weights=weights)
 
         start, end = self._symmetry
         if verbose:
@@ -757,19 +757,21 @@ class Misorientation(Rotation):
             candidates = end * rots * start
             dp = np.abs(candidates.dot(rough_mean))
             if use_improper is False:
-                dp[candidates.improper]=0
-            mis.data[dp>max_dp,:] = candidates.data[dp>max_dp,:]
-            max_dp[dp>max_dp] = dp[dp>max_dp]
+                dp[candidates.improper] = 0
+            mis.data[dp > max_dp, :] = candidates.data[dp > max_dp, :]
+            max_dp[dp > max_dp] = dp[dp > max_dp]
         if use_improper is False:
             if np.max(max_dp) <= 0:
                 raise ValueError(
-                    "A mean cannot be calculated as all elements are " +
-                    "improper. Either use a crystal symmetry with " + 
-                    "inversion, or set 'ignore_improper' to False")
-            mis = mis[max_dp>0]
-            
+                    "A mean cannot be calculated as all elements are "
+                    + "improper. Either use a crystal symmetry with "
+                    + "inversion, or set 'ignore_improper' to False"
+                )
+            mis = mis[max_dp > 0]
+
         fine_mean = Rotation(mis.data).mean(weights=weights)
-        return self.__class__(fine_mean,symmetry=self._symmetry)
+        return self.__class__(fine_mean, symmetry=self._symmetry)
+
 
 def _get_distance_matrix_dask(
     mori: Misorientation,
