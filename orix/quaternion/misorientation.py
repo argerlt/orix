@@ -738,33 +738,20 @@ class Misorientation(Rotation):
             # convert to a rotation to emphasize loss of symmetry information
             return Rotation(self.data).mean(weights=weights) 
 
-        old_start = Rotation(self._symmetry[0])
-        old_end = Rotation(self._symmetry[1])
-        if ignore_improper:
-            start = old_start[~old_start.improper]
-            end = old_end[~old_end.improper]
-        else:
-            start = old_start
-            end = old_end
+        start, end = self._symmetry
         if verbose:
-            if len(start) !=len(old_start):
-                print(
-                    "starting symmetry reduced from {} to {}".format(
-                    len(old_start),len(start)))
-            # if len(end) =len(old_end):
-                print(
-                    "starting symmetry reduced from {} to {}".format(
-                    len(old_end),len(end)))
             print("reducing to fundamental zone...")
+        # overwrite new nearest values into mis. Use rot for calculating
+        # candidated fror inclusing in mis.
         mis = self.reduce(verbose=verbose)
         rots = Rotation(mis.data)
         rough_mean = rots.mean(weights=weights)
+        max_dp = np.zeros(rots.shape, dtype=float)
         symmetry_pairs = iproduct(start, end)
         if verbose:
             print("checking for closer equivalent representations...")
             s = np.prod([x.size for x in mis._symmetry])
             symmetry_pairs = tqdm(symmetry_pairs, total=s)
-        max_dp = np.zeros(rots.shape, dtype=float)
         for start, end in symmetry_pairs:
             candidates = end * rots * start
             dp = np.abs(candidates.dot(rough_mean))
