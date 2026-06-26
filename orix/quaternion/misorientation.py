@@ -785,3 +785,35 @@ def _get_distance_matrix_dask(
         da.store(sources=angles_dask, targets=angles)
 
     return angles
+
+
+# def _get_nearest_neighbor_dask(
+#     mori: Misorientation,
+#     ref: Misorientation,
+#     symmetry: Symmetry,
+#     chunk_size: int,
+#     progressbar: bool,
+# ) -> np.ndarray:
+#     M1 = symmetry.outer(mori).outer(symmetry)
+#     M2 = M1._outer_dask(~ref, chunk_size=chunk_size)
+
+#     # Perform last outer product and reduce to all dot products at
+#     # the same time
+#     warnings.filterwarnings("ignore", category=da.PerformanceWarning)
+#     str1 = "abcdefghijklmnopqrstuvwxy"[: M2.ndim]
+#     str2 = "z" + str1[-1]  # Last axis has shape (4,)
+#     sum_over = f"{str1},{str2}->{str1[:-1] + str2[0]}"
+#     all_dot_products = da.einsum(sum_over, M2, symmetry.data)
+
+#     # Get neighbor with highest dot product
+#     axes = (0, mori.ndim + 1, 2 * mori.ndim + 2)
+#     neighbor_idx = da.argmax(abs(all_dot_products), axis=axes)
+#     #TODO: finsih this.
+
+#     if progressbar:
+#         with ProgressBar():
+#             da.store(sources=angles_dask, targets=angles)
+#     else:
+#         da.store(sources=angles_dask, targets=angles)
+
+#     return angles
