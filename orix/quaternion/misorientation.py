@@ -646,9 +646,10 @@ class Misorientation(Rotation):
     def mean(
         self,
         weights: np.ndarray | None = None,
-        ignore_symmetry: bool = False,
+        proper_mean: bool = False,
         verbose: bool = False,
-        use_improper: bool = False,
+        ignore_symmetry: bool = False,
+        return_neighbors = False
     ) -> Misorientation:
         """Return the mean (mis)orientation.
 
@@ -659,23 +660,31 @@ class Misorientation(Rotation):
             average instead of the unweighted mean. Must be the same
             size as the quaternion array.
 
-        ignore_symmetry
-            If True, ignore all symmetry and return the mean
-            rotation. Default is ``False``.
+        proper_mean
+            If True, improper representations of misorientations will
+            be excluded from the calculation of the mean. See Notes
+            for details. Default is False.
 
         verbose
             If True, prints progress bars during long computations
             and reports changes to symmetry. Default is False.
 
-        use_improper
-            If True, improper representations of misorientations will
-            be included in the calculation of the mean. See Notes
-            for details. Default is False.
+        ignore_symmetry
+            If True, ignore all symmetry considerations. See Notes
+            for detials. Default is False.
+
+        return_neighbors
+            If True, returns the nearest neighbors used to calculate
+            the mean. Default is False.
 
         Returns
         -------
         mean
             Mean (mis)orientation.
+
+        neighbors
+            Optional. If `return_neighbors` is True, returns the
+            representations used to calculate the mean.
 
         Notes
         -----
@@ -701,9 +710,10 @@ class Misorientation(Rotation):
         Frobenius norm does not apply to improper rotations. To
         address this, inverted elements can either be ignored, or
         treated as proper elements when calculating angular deviation.
-        By default, all improper elements are ignored, though an
-        improper element with a proper symmetrically-equivalent
-        representation would still be included.
+        By default, all improper elements are treat as proper for
+        the sake of calculations,  As this aligns with the definition
+        of the McKenzie Fundamental Zone defined in 
+        :func:`Misorientation.reduce`.
         """
         if ignore_symmetry is True:
             # convert to a rotation to emphasize loss of symmetry information
@@ -712,36 +722,31 @@ class Misorientation(Rotation):
         start, end = self._symmetry
         if verbose:
             print("reducing to fundamental zone...")
-        # overwrite new nearest values into mis. Use rot for calculating
-        # candidated fror inclusing in mis.
-        mis = self.reduce(verbose=verbose)
-        rots = Rotation(mis.data)
+        # overwrite new nearest values into neighbors. Use rot for calculating
+        # candidated fror inclusing in neighbors.
+        neighbors = self.reduce(verbose=verbose)
+        rots = Rotation(neighbors.data)
         rough_mean = rots.mean(weights=weights)
-        rots.improper = mis.improper
+        rots.improper = neighbors.improper
         max_dp = np.zeros(rots.shape, dtype=float)
         symmetry_pairs = iproduct(start, end)
         if verbose:
             print("checking for closer equivalent representations...")
-            s = np.prod([x.size for x in mis._symmetry])
+            s = np.prod([x.size for x in neighbors._symmetry])
             symmetry_pairs = tqdm(symmetry_pairs, total=s)
         for start, end in symmetry_pairs:
             candidates = end * rots * start
             dp = np.abs(candidates.dot(rough_mean))
-            if use_improper is False:
+            if proper_mean:
                 dp[candidates.improper] = 0
-            mis.data[dp > max_dp, :] = candidates.data[dp > max_dp, :]
+            neighbors.data[dp > max_dp, :] = candidates.data[dp > max_dp, :]
             max_dp[dp > max_dp] = dp[dp > max_dp]
-        if use_improper is False:
-            if np.max(max_dp) <= 0:
-                raise ValueError(
-                    "A mean cannot be calculated as all elements are "
-                    + "improper. Either use a crystal symmetry with "
-                    + "inversion, or set 'ignore_improper' to False"
-                )
-            mis = mis[max_dp > 0]
 
-        fine_mean = Rotation(mis.data).mean(weights=weights)
-        return self.__class__(fine_mean, symmetry=self._symmetry)
+        fine_mean_rot = Rotation(neighbors.data).mean(weights=weights)
+        fine_mean = self.__class__(fine_mean_rot, symmetry=self._symmetry)
+        if return_neighbors:
+            return [fine_mean, neighbors]
+        return fine_mean
 
 
 def _get_distance_matrix_dask(
