@@ -31,6 +31,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as SciPyRotation
 from tqdm import tqdm
 
+from orix._utils.deprecation import deprecated
 from orix.quaternion._numba import _mori_distance_matrix
 from orix.quaternion.orientation_region import OrientationRegion
 from orix.quaternion.rotation import Rotation
@@ -392,6 +393,34 @@ class Misorientation(Rotation):
 
         return self.__class__(equivalent).flatten()
 
+    @deprecated(since="0.14", removal="0.15", alternative="reduce")
+    def map_into_symmetry_reduced_zone(self, verbose: bool = False) -> Misorientation:
+        """Return equivalent transformations which have the smallest
+        angle of rotation as a new misorientation.
+
+        Parameters
+        ----------
+        verbose
+            Whether to print a progressbar. Default is ``False``.
+
+        Returns
+        -------
+        M
+            A new misorientation object with the assigned symmetry.
+
+        Examples
+        --------
+        >>> from orix.quaternion.symmetry import C4, C2
+        >>> data = np.array([[0.5, 0.5, 0.5, 0.5], [0, 1, 0, 0]])
+        >>> M = Misorientation(data)
+        >>> M.symmetry = (C4, C2)
+        >>> M.map_into_symmetry_reduced_zone()
+        Misorientation (2,) 4, 2
+        [[-0.7071  0.7071  0.      0.    ]
+        [ 0.      1.      0.      0.    ]]
+        """
+        return self.reduce(verbose)
+
     def reduce(self, verbose: bool = False) -> Misorientation:
         """Return equivalent transformations which have the smallest
         angle of rotation as a new misorientation.
@@ -644,15 +673,14 @@ class Misorientation(Rotation):
         return self.__invert__()
 
     def mean(
-        self,
-        weights: np.ndarray | None = None,
-        proper_mean: bool = False,
-        verbose: bool = False,
-        ignore_symmetry: bool = False,
-        return_neighbors = False
-    ) -> Misorientation:
+            self, 
+            weights: np.ndarray| None = None,
+            ignore_symmetry: bool = False,
+            verbose: bool = False,
+            ignore_improper: bool = True,
+            ) -> Misorientation:
         """Return the mean (mis)orientation.
-
+            
         Parameters
         ----------
         weights
@@ -660,31 +688,23 @@ class Misorientation(Rotation):
             average instead of the unweighted mean. Must be the same
             size as the quaternion array.
 
-        proper_mean
-            If True, improper representations of misorientations will
-            be excluded from the calculation of the mean. See Notes
-            for details. Default is False.
+        ignore_symmetry
+            If True, ignore all symmetry and return the mean
+            rotation. Default is ``False``.
 
         verbose
             If True, prints progress bars during long computations
             and reports changes to symmetry. Default is False.
 
-        ignore_symmetry
-            If True, ignore all symmetry considerations. See Notes
-            for detials. Default is False.
-
-        return_neighbors
-            If True, returns the nearest neighbors used to calculate
-            the mean. Default is False.
+        ignore_improper
+            If True, only proper misorientations will be used to
+            calculate the mean. See Notes for details. Default is
+            True.
 
         Returns
         -------
         mean
             Mean (mis)orientation.
-
-        neighbors
-            Optional. If `return_neighbors` is True, returns the
-            representations used to calculate the mean.
 
         Notes
         -----
@@ -692,7 +712,7 @@ class Misorientation(Rotation):
         define a mean for rotations, as given in equations 12 and 13
         of :cite:`markley_averaging_2007`. Refer to
         :func:`orix.quaternion.Quaternion.mean` for details.
-
+        
         To account for symmetry, the following proceedure is used:
 
             1) Misorientations are reduced to the fundamental zone.
@@ -710,44 +730,58 @@ class Misorientation(Rotation):
         Frobenius norm does not apply to improper rotations. To
         address this, inverted elements can either be ignored, or
         treated as proper elements when calculating angular deviation.
-        By default, all improper elements are treat as proper for
-        the sake of calculations,  As this aligns with the definition
-        of the McKenzie Fundamental Zone defined in 
-        :func:`Misorientation.reduce`.
+        By default, all improper elements are ignored, though an
+        improper element with a proper symmetrically-equivalent
+        representation would still be included.
         """
         if ignore_symmetry is True:
             # convert to a rotation to emphasize loss of symmetry information
-            return Rotation(self.data).mean(weights=weights)
+            return Rotation(self.data).mean(weights=weights) 
 
-        start, end = self._symmetry
+        old_start = Rotation(self._symmetry[0])
+        old_end = Rotation(self._symmetry[1])
+        if ignore_improper:
+            start = old_start[~old_start.improper]
+            end = old_end[~old_end.improper]
+        else:
+            start = old_start
+            end = old_end
         if verbose:
+            if len(start) !=len(old_start):
+                print(
+                    "starting symmetry reduced from {} to {}".format(
+                    len(old_start),len(start)))
+            # if len(end) =len(old_end):
+                print(
+                    "starting symmetry reduced from {} to {}".format(
+                    len(old_end),len(end)))
             print("reducing to fundamental zone...")
-        # overwrite new nearest values into neighbors. Use rot for calculating
-        # candidated fror inclusing in neighbors.
-        neighbors = self.reduce(verbose=verbose)
-        rots = Rotation(neighbors.data)
+        mis = self.reduce(verbose=verbose)
+        rots = Rotation(mis.data)
         rough_mean = rots.mean(weights=weights)
-        rots.improper = neighbors.improper
-        max_dp = np.zeros(rots.shape, dtype=float)
         symmetry_pairs = iproduct(start, end)
         if verbose:
             print("checking for closer equivalent representations...")
-            s = np.prod([x.size for x in neighbors._symmetry])
+            s = np.prod([x.size for x in mis._symmetry])
             symmetry_pairs = tqdm(symmetry_pairs, total=s)
+        max_dp = np.zeros(rots.shape, dtype=float)
         for start, end in symmetry_pairs:
             candidates = end * rots * start
             dp = np.abs(candidates.dot(rough_mean))
-            if proper_mean:
-                dp[candidates.improper] = 0
-            neighbors.data[dp > max_dp, :] = candidates.data[dp > max_dp, :]
-            max_dp[dp > max_dp] = dp[dp > max_dp]
-
-        fine_mean_rot = Rotation(neighbors.data).mean(weights=weights)
-        fine_mean = self.__class__(fine_mean_rot, symmetry=self._symmetry)
-        if return_neighbors:
-            return [fine_mean, neighbors]
-        return fine_mean
-
+            if ignore_improper:
+                dp[candidates.improper]=0
+            mis.data[dp>max_dp,:] = candidates.data[dp>max_dp,:]
+            max_dp[dp>max_dp] = dp[dp>max_dp]
+        if ignore_improper:
+            if np.max(max_dp) <= 0:
+                raise ValueError(
+                    "A mean cannot be calculated as all elements are " +
+                    "improper. Either use a crystal symmetry with " + 
+                    "inversion, or set 'ignore_improper' to False")
+            mis = mis[max_dp>0]
+            
+        fine_mean = Rotation(mis.data).mean(weights=weights)
+        return self.__class__(fine_mean,symmetry=self._symmetry)
 
 def _get_distance_matrix_dask(
     mori: Misorientation,
@@ -785,7 +819,6 @@ def _get_distance_matrix_dask(
         da.store(sources=angles_dask, targets=angles)
 
     return angles
-
 
 # def _get_nearest_neighbor_dask(
 #     mori: Misorientation,
