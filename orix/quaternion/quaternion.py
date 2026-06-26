@@ -1157,7 +1157,7 @@ class Quaternion(Object3d):
         Q = self.flatten().data.T
         if weights is not None:
             weights = np.asanyarray(weights).flatten()[:, np.newaxis]
-            QQ = Q.dot(weights[:, np.newaxis] * Q.T)
+            QQ = Q.dot(weights * Q.T)
         else:
             QQ = Q.dot(Q.T)
         w, v = np.linalg.eig(QQ)
