@@ -21,13 +21,14 @@ from diffpy.structure import Lattice, Structure
 import numpy as np
 import pytest
 from scipy.spatial.transform import Rotation as SciPyRotation
+from scipy.stats import norm
 
 from orix._utils.constants import VisibleDeprecationWarning
 from orix.crystal_map import Phase
 from orix.quaternion import Misorientation
 
 # isort: off
-from orix.quaternion.symmetry import C1, D6, Oh, _groups
+from orix.quaternion.symmetry import C1, C3, C2v, D4, D6, T, Oh, _groups
 
 # isort: on
 from orix.vector import Miller, Vector3d
@@ -187,5 +188,35 @@ class TestMisorientation:
         assert M3.symmetry == (Oh, D6)
     
     def test_mean(self):
-        a = 1
-        
+        np.random.seed(2319)  
+        qu_data = np.stack([norm.rvs(i,0.05,20) for i in [0.3,0.1,0.2,0.3]]).T
+        syms = [C1, C3, C2v, D4]
+        for start in syms:
+            for end in syms:
+                # fundamental zones are undefined for misorientatoins with
+                # improper symmetries that lack inversion (example: C2v->C2v).
+                # Thus, we ignore those here. 
+                if not any([
+                        start.is_proper,
+                        end.is_proper,
+                        start.contains_inversion, 
+                        end.contains_inversion
+                        ]):
+                    continue
+                m = Misorientation(qu_data,symmetry=(start, end)).reduce()
+                rough = m.reduce().mean(ignore_symmetry=True)
+                rough_m = m.reduce()
+                fine, fine_m = m.mean(proper_mean=False, return_neighbors=True)
+                prop,prop_m = m.mean(proper_mean=True,return_neighbors=True)
+                r_dp = np.mean(np.abs(rough.dot(rough_m)))
+                f_dp = np.mean(np.abs(fine.dot(fine_m)))
+                p_dp = np.mean(np.abs(prop.dot(prop_m)))
+                assert(r_dp<=p_dp)
+                assert(p_dp<=f_dp)
+                print(r_dp-p_dp,p_dp-f_dp)
+                # Test weighting
+                m1 = m[[0,0,0,1,2,2,4]]
+                m2 = m[:5]
+                m1.mean() == m2.mean(weights=[3,1,2,0,1])
+        # Test verbose
+        m_verbose = m1.mean(verbose=True)
