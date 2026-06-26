@@ -79,22 +79,24 @@ plt.tight_layout()
 # it is necessary to check every symmetrically equivalent permutation of each
 # misorientation and find values that are closer to the estimated mean value,
 # then recalculate the mean.
-#
-# The final complication comes from how to handle improper representations
-# both in the original data and occurring due to inversions and rotoinversions.
-# since no pure rotation can align an improper reference frame with a proper
-# one, the concept of a "minimum total angular distance" does not apply.
-# The two solutions are to either ignore improper elements, or treat them
-# as proper elements. This is often a negligable difference, but for certain
-# systems, it can have a notable impact on the calculated mean.
 
 qu_data = np.stack([norm.rvs(i,0.09,400) for i in [0.3,0.1,0.2,0.3]]).T
 clustered_m = oqu.Misorientation(qu_data, symmetry=(osm.D4,osm.C2v)).reduce()
 fz_D4_D2h = oqu.OrientationRegion.from_symmetry(*clustered_m.symmetry)
-
 rough_mean = oqu.Rotation(clustered_m).mean()
-precise_proper_mean = clustered_m.mean()
-precise_improper_mean = clustered_m.mean(use_improper=True)
+precise_mean = clustered_m.mean()
+
+#########################################################################################
+# The final complication comes from how to handle improper representations
+# occurring due to inversions and rotoinversions. Since no pure rotation can
+# align an improper reference frame witha proper reference frame, the
+# concept of a "minimum total angular distance" does not apply.
+# The two solutions are to either ignore improper elements, or treat them
+# as proper elements. This is often a negligable difference, but for certain
+# misorientation-specific systems, it can have a notable impact on the mean.
+
+
+precise_proper_mean = clustered_m.mean(proper_mean=True)
 
 reduced = oqu.Rotation(clustered_m.data)
 nearest = oqu.Rotation(clustered_m.data)
@@ -126,7 +128,7 @@ ax2.scatter(reduced[~all_changes], c='grey', s =4,alpha = 0.3)
 ax2.scatter(reduced[all_changes], c='black', s =4,alpha = 0.3)
 
 ax2.scatter(nearest[improper_changes*~both_changes], c='red',s=4, alpha = 0.3)
-ax2.scatter(precise_improper_mean,s=60,c='red')
+ax2.scatter(precise_mean,s=60,c='red')
 for i in np.arange(clustered_m.size)[improper_changes*~both_changes]:
     ax2.plot(oqu.Misorientation.stack([reduced[i],nearest[i]]),color='red',alpha = 0.2,linewidth = 1)
 
