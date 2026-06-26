@@ -211,31 +211,39 @@ def _mori_distance_matrix(
             distance_matrix[j, i] = distance
             
 
-<<<<<<< Updated upstream
-    return out
+    return distance_matrix
 
 @nb.njit(cache=True, fastmath=True, nogil=True, parallel=True)
-def _mori_nearest_neighbor(
-    qu: np.ndarray,
-    ref: np.ndarray,
-    sym_ops: np.ndarray,
-) -> np.ndarray:  # pragma: no cover
-    r"""Return the symmetry-reduced nearest neighbors to a reference
-    misorientation.
+def _mori_reduced_distance_and_symmetries(
+    qu_ref: np.ndarray,
+    qu_query: np.ndarray,
+    sym_query_ops: np.ndarray,
+) -> [np.ndarray,np.ndarray]:  # pragma: no cover
+    r"""For each reference mori, return the nearest symmetry-reduced
+    versions of each queried mori, and the symmetries to produce them.
 
-    This is equivalent to _mori_distance_matrix, but calculated
-    relative to only a single reference point, and returning the
-    misorientations, not their dot products.
+    This is identical to the calculation in _mori_distance_matrix,
+    except two lists of morientations can be compared to each
+    other instead of one to itself, and the 
+Given reference misorientations :math:`r_i` and symmetry elements
+    :math:`s \in S`, compute
 
-    Memory usage is O(n).
+    .. math::
+
+        D_{ij} = \arccos(2 \cdot (\max_{l,r \in S} |\langle M_i s_l M_j^{-1}, s_r \rangle|)^2 - 1)
+
+    This is equivalent to the full formula
+    :math:`\max_{k,l,p}|\langle s_k M_i s_l M_j^{-1}, s_p \rangle|` used
+    by the Dask path, because left-invariance of the quaternion dot
+    product collapses the independent maximisation over :math:`k` and
+    :math:`p` into a single index.
+
+    Memory usage is O(n*n).
 
     Parameters
     ----------
     qu
         Array of shape (n, 4) with unit quaternion components.
-    ref
-        Array of shape (1, 4) of a reference unit quternion that
-        distances are calculated relative to.
     sym_ops
         Array of shape (s, 4) with unit quaternion components of all
         symmetry elements (proper *and* improper).
@@ -246,69 +254,6 @@ def _mori_nearest_neighbor(
         Array of shape (n, n) with pairwise misorientation angles in
         radians.
     """
-    n = qu.shape[0]
-    s = sym_ops.shape[0]
-    out = np.empty((n, 4), dtype=np.float64)
-
-    # M_j^{-1} = conj(M_j) for unit quaternions
-    refw = ref[0, 0]
-    refx = -ref[0, 1]
-    refy = -ref[0, 2]
-    refz = -ref[0, 3]
-
-    for i in nb.prange(n):
-        ai = qu[i, 0]
-        bi = qu[i, 1]
-        ci = qu[i, 2]
-        di = qu[i, 3]
-
-        max_dp = 0.0
-
-        for l in range(s):
-            sl0 = sym_ops[l, 0]
-            sl1 = sym_ops[l, 1]
-            sl2 = sym_ops[l, 2]
-            sl3 = sym_ops[l, 3]
-
-            # t = M_i * s_l
-            t0 = ai * sl0 - bi * sl1 - ci * sl2 - di * sl3
-            t1 = ai * sl1 + bi * sl0 + ci * sl3 - di * sl2
-            t2 = ai * sl2 - bi * sl3 + ci * sl0 + di * sl1
-            t3 = ai * sl3 + bi * sl2 - ci * sl1 + di * sl0
-
-            # u = t * M_j^{-1} = (M_i * s_l) * conj(M_j)
-            u0 = t0 * refw - t1 * refx - t2 * refy - t3 * refz
-            u1 = t0 * refx + t1 * refw + t2 * refz - t3 * refy
-            u2 = t0 * refy - t1 * refz + t2 * refw + t3 * refx
-            u3 = t0 * refz + t1 * refy - t2 * refx + t3 * refw
-
-            # Find max |<u, s_r>| over all r in S
-            for r in range(s):
-                dp = (
-                    u0 * sym_ops[r, 0]
-                    + u1 * sym_ops[r, 1]
-                    + u2 * sym_ops[r, 2]
-                    + u3 * sym_ops[r, 3]
-                )
-                if dp < 0.0:
-                    dp = -dp
-                if dp > max_dp:
-                    max_dp = dp
-                    out[i,0] = u0
-                    out[i,1] = u1
-                    out[i,2] = u2
-                    out[i,3] = u3
-
-    return out
-=======
-    return distance_matrix
-
-@nb.njit(cache=True, fastmath=True, nogil=True, parallel=True)
-def _mori_reduced_distance_and_neighbor(
-    qu_ref: np.ndarray,
-    qu_query: np.ndarray,
-    sym_query_ops: np.ndarray,
-) -> [np.ndarray,np.ndarray]:  # pragma: no cover
 
     qu_ref_size = qu_ref.shape[0]
     qu_query_size = qu_query.shape[0]
@@ -379,4 +324,3 @@ def _mori_reduced_distance_and_neighbor(
             sym_matrix[i,j,1]=r_nearest
 
     return distance_matrix, sym_matrix
->>>>>>> Stashed changes
