@@ -61,26 +61,38 @@ def get_proper_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetr
 
     Parameters
     ----------
-    Gl
-        First point group.
-    Gr
-        Second point group.
+    start
+        Initial point group, C1 for orientations.
+    end
+        Ending point group.
 
     Returns
     -------
-    Gl
-        First proper subgroup(s) or proper inversion subgroup(s), as
-        appropriate.
-    Gr
-        Second proper subgroup(s) or proper inversion subgroup(s), as
-        appropriate.
+    start
+        Initial proper, inversion, or laue subgroup as appropriate.
+    end
+        Final proper, inversion, or laue subgroup as appropriate.
 
-    Raises
-    ------
-    NotImplementedError
-        If both groups are improper and neither contain an inversion,
-        special consideration is needed which is not yet implemented in
-        orix.
+    Notes
+    -----
+    ORIX follows the asymmetric domain/fundamental zone definitions
+    from in :cite:`krakow2017onthree`. However, for reasons given
+    in section 3(b), that paper only defines domains for the 121
+    combinations of proper point groups. Orix extends their logic for
+    defining domains to the remaining 903 point group combinations.
+
+    This is a trivial terminology issue for all orientations as well
+    as any misorientations where both point groups are proper and/or
+    centrosymmetric, which together account for 704 of the possible
+    1024 symmetry cases. This includes data from EBSD due to the
+    artificial centrosymmetry introduced in kikuchi diffraction.For
+    the remaining 320 misorientations where one or both point groups
+    improper and not centrosymmetric (for example, 6mm-->6mm)
+    there is always one and occasionally 2 improper rotations that
+    also map to the fundamental zone, as well as a possible
+    pseudo-proper rotation only achievable by  combining two
+    roto-inversions.(ex., 6mm). There is currently no concencus in
+    literature on how to handle these rare edge cases.
     """
     if start.is_proper and end.is_proper:
         return start, end
@@ -100,24 +112,40 @@ def get_proper_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetr
 
 
 class OrientationRegion(Rotation):
-    """Some subset of the complete space of orientations.
+    """A subset of rotation space.
+    
+    The complete set of all possible rigid body rotations is called
+    SO(3). it can be thought of as half the quaternion unit sphere,
+    the entirety of Rodrigues space, the set of all 3x3 matrices
+    with a determinate of 1, or various other descriptors based
+    on the application.
 
-    The complete orientation space represents every possible orientation
-    of an object. The whole space is not always needed, for example if
-    the orientation of an object is constrained or (most commonly) if
-    the object is symmetrical. In this case, the space can be segmented
-    using sets of Rotations representing boundaries in the space. This
-    is clearest in the Rodrigues parametrisation, where the boundaries
-    are planes, such as the example here: the asymmetric domain of an
-    adjusted 432 symmetry.
-
+    Sometimes, this whole space is not need, for example if the
+    orientation of an object is constrained or (most commonly) if
+    the object is symmetrical. In this case, the space can be
+    segmented using set of rotations representing boundaries in the
+    space. This can be most easily visualized using Rodrigues
+    space, where the boundaries become flat planes normal to the
+    rodrigues vectors of those bounding rotations.
+    
     .. image:: /_static/img/orientation-region-Oq.png
        :width: 300px
        :alt: Boundaries of an orientation region in Rodrigues space.
        :align: center
 
-    Rotations or orientations can be inside or outside of an orientation
-    region.
+    Quaternions can then be quickly defined as inside or outside of
+    these regions via a dot product operation.
+
+    Notably, these regions are only defined in SO(3), which means
+    they cannot account for improper operations. This is why
+    OrientationRegion.from_symmetry() calculates identical regions
+    for point groups 432 and m-3m despite m-3m having twice as many
+    distinguished points. This ends up being irrelevant for
+    Orientations since any improper operations that place a point
+    within a fundamental zone always have a paired proper operation
+    that returns an identical quaternion, but it can create confusion
+    for misorientations with rotoinversions when users assume an
+    OrientationRegion can uniquely define a true fundamental zone.
     """
 
     # ------------------------ Dunder methods ------------------------ #
@@ -125,8 +153,9 @@ class OrientationRegion(Rotation):
     def __gt__(self, other: OrientationRegion) -> np.ndarray:
         """Overridden greater than method.
 
-        Applying this to an orientation will return only those that lie
-        within the region.
+        Applying this to a rotation will return only those that lie
+        within the region. This operation does not account for
+        inversion.
         """
         c = Quaternion(self).dot_outer(Quaternion(other))
         inside = np.logical_or(
@@ -143,18 +172,55 @@ class OrientationRegion(Rotation):
             start: Symmetry = C1,
             end: Symmetry = C1,
             ) -> OrientationRegion:
+        """ Return an orientation region for a given symmetry.
+
+        These regions are identical to the fundamental zone for all
+        orientations and every misorientation where both
+        symmetries are proper and/or centrosymmetric. For
+        all other cases, it is still garunteed to inlude only one
+        unique represenation achievable though proper rotations.See
+        Notes for details.
 
         Parameters
         ----------
-        s1
-            First symmetry.
-        s2
-            Second symmetry. Default is C1 (the identity).
+        start
+            Initial point group, C1 for passive orientations.
+        end
+            Ending point group.
 
         Returns
         -------
         region
             The orientation region.
+
+        Notes
+        -----
+        ORIX follows the asymmetric domain/fundamental zone definitions
+        from in :cite:`krakow2017onthree`. However, for reasons given
+        in section 3(b), domains are only described for the 121
+        combinations of proper point groups. Section 5.3.1 of
+        :cite"martineau2020multivariate" gives pseudocode for
+        extending this original logic to define domains for all 1024
+        possible symmetry cases.
+
+        This ends up being a trivial terminology issue for all
+        orientations as well as any misorientations where both point
+        groups are proper and/or centrosymmetric. This includes all
+        EBSD data as well, since kikuchi diffraction introduces an
+        artificial centrosymmetry. For these 704 cases, either the
+        region returned bounds a fully unique zone, or it bounds
+        all proper representations, and the improper representations
+        have identical quaternion representations.
+        
+        For the remaining 320 misorientations where one or both
+        point groups contain rotoinversions but are not
+        centrosymmetric (for example, 6mm --> 6mm), there are always
+        one and possibly two improper rotations that also map to the
+        orientation region but with unique quaternion values, as well
+        as a possible unique pseudo-proper rotation only achievable
+        through two rotoinversions. There is currently no concensus
+        on how to define unique fundamental zones for these edge
+        cases.
         """
 
         # Step 1: fundamental zones are only defined for the 121 proper
