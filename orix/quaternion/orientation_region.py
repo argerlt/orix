@@ -30,8 +30,7 @@ from orix.quaternion.symmetry import C1, Symmetry, get_distinguished_points
 from orix.vector.neo_euler import Rodrigues
 
 
-def _get_large_cell_normals(s1, s2):
-    dp = get_distinguished_points(s1, s2)
+def _get_large_cell_normals(dp):
 
     if dp.size == 0:
         return Rotation.empty()
@@ -56,7 +55,7 @@ def _get_large_cell_normals(s1, s2):
     return normals
 
 
-def get_proper_groups(Gl: Symmetry, Gr: Symmetry) -> tuple[Symmetry, Symmetry]:
+def get_proper_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetry]:
     """Return the appropriate groups for the asymmetric domain
     calculation.
 
@@ -83,23 +82,21 @@ def get_proper_groups(Gl: Symmetry, Gr: Symmetry) -> tuple[Symmetry, Symmetry]:
         special consideration is needed which is not yet implemented in
         orix.
     """
-    if Gl.is_proper and Gr.is_proper:
-        return Gl, Gr
-    elif Gl.is_proper and not Gr.is_proper:
-        return Gl, Gr.proper_subgroup
-    elif not Gl.is_proper and Gr.is_proper:
-        return Gl.proper_subgroup, Gr
+    if start.is_proper and end.is_proper:
+        return start, end
+    elif start.is_proper and not end.is_proper:
+        return start, end.proper_subgroup
+    elif not start.is_proper and end.is_proper:
+        return start.proper_subgroup, end
     else:
-        if Gl.contains_inversion and Gr.contains_inversion:
-            return Gl.proper_subgroup, Gr.proper_subgroup
-        elif Gl.contains_inversion and not Gr.contains_inversion:
-            return Gl.proper_subgroup, Gr.laue_proper_subgroup
-        elif not Gl.contains_inversion and Gr.contains_inversion:
-            return Gl.laue_proper_subgroup, Gr.proper_subgroup
+        if start.contains_inversion and end.contains_inversion:
+            return start.proper_subgroup, end.proper_subgroup
+        elif start.contains_inversion and not end.contains_inversion:
+            return start.proper_subgroup, end.laue_proper_subgroup
+        elif not start.contains_inversion and end.contains_inversion:
+            return start.laue_proper_subgroup, end.proper_subgroup
         else:
-            raise NotImplementedError(
-                "Both groups are improper, " "and do not contain inversion."
-            )
+            return start.laue_proper_subgroup, end.laue_proper_subgroup
 
 
 class OrientationRegion(Rotation):
@@ -141,9 +138,11 @@ class OrientationRegion(Rotation):
     # ------------------------ Class methods ------------------------- #
 
     @classmethod
-    def from_symmetry(cls, s1: Symmetry, s2: Symmetry = C1) -> OrientationRegion:
-        """Return the set of unique (mis)orientations of a symmetrical
-        object.
+    def from_symmetry(
+            cls,
+            start: Symmetry = C1,
+            end: Symmetry = C1,
+            ) -> OrientationRegion:
 
         Parameters
         ----------
@@ -157,11 +156,49 @@ class OrientationRegion(Rotation):
         region
             The orientation region.
         """
-        s1, s2 = get_proper_groups(s1, s2)
-        large_cell_normals = _get_large_cell_normals(s1, s2)
-        disjoint = s1 & s2
+
+        # Step 1: fundamental zones are only defined for the 121 proper
+        # symmetries. Convert any improper symmetries to the most sensical
+        # proper ones.
+        # NOTE: the following logic could be simplified, but keeping
+        # it in this format makes the logic for different cases more
+        # clear.
+        #
+        # If one symmetry is proper, any improper rotations from the
+        # second symmetry will fall outside the fundamental sector of the
+        # disjoint group.
+        if start.is_proper or end.is_proper:
+            start = start.proper_subgroup
+            end =end.proper_subgroup
+        # If both are centrosymmetric, all improper operations have identical
+        # proper versions, and the proper/improper regions are identical.
+        elif start.contains_inversion and end.contains_inversion:
+            start = start.proper_subgroup
+            end =end.proper_subgroup
+        # For all other cases, non-centrosymmetric groups should be converted
+        # to laue groups, and then improper operators should be ignored.
+        # This is equivalent to converting rotoinversions to rotations, and
+        # allows the selection of the correct fundamental sector.
+        else:
+            if not start.contains_inversion:
+                start = start.laue
+            if not end.contains_inversion:
+                end = end.laue
+            start = start.proper_subgroup
+            end =end.proper_subgroup
+
+        # Step 2: define the bounding cells using the distinguished points.
+        dp = get_distinguished_points(start, end)
+        large_cell_normals = _get_large_cell_normals(dp)
+
+        # Step 3: (only for misorientations) restrict the domain to the
+        # fundamental sector of the pole figure of the shared symmetries.
+        disjoint = start & end
         fz = disjoint.fundamental_zone()
         fz_normals = Rotation.from_axes_angles(fz, np.pi)
+        
+        # Step 4: combine these restrictions into a single domain, and
+        # remove redundant or unused boundares.
         normals = Rotation(np.concatenate([large_cell_normals.data, fz_normals.data]))
         region = cls(normals)
         vertices = region.vertices()
