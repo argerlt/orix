@@ -440,16 +440,21 @@ class Misorientation(Rotation):
         # (orientation) or MacKenzie (misorientation) fundamental zone
         # (FZ), given by the symmetry elements. We loop over all
         # symmetry pairs and rotate all (mis)orientations until all are
-        # inside the FZ.
+        # inside the FZ. Ignore symmetry combinations that need an inversion,
+        # as these are not handled by the MacKenzie/Rodrigues definitions of
+        # a fundamental zone.
         fz = OrientationRegion.from_symmetry(s1=start, s2=end)
         reduced = self.__class__.identity(self.shape)
         is_outside = np.ones(self.shape, dtype=bool)
         for sym_start, sym_end in symmetry_pairs:
+            if sym_start.improper != sym_end.improper:
+                continue            
             reduced[is_outside] = sym_end * self[is_outside] * sym_start
             is_outside = ~(reduced < fz)
             if not is_outside.any():
                 break
-
+        # convert to northern hemisphere representations
+        # reduced.data[reduced.a<0] = reduced.data[reduced.a<0]*-1
         reduced._symmetry = (start, end)
         return reduced
 
