@@ -393,9 +393,13 @@ class Misorientation(Rotation):
         return self.__class__(equivalent).flatten()
 
     def reduce(self, verbose: bool = False) -> Misorientation:
-        """Return equivalent transformations which have the smallest
-        angle of rotation as a new misorientation.
+        """Return symmetrically equivalent transformations with the
+        smallest angle of rotation.
 
+        for misorientations, reduced representations are further
+        restricted to transforms inside their symmetry's fundamental
+        zone. See Notes section for details.
+        
         Parameters
         ----------
         verbose
@@ -419,15 +423,22 @@ class Misorientation(Rotation):
 
         Notes
         -----
-        The misorientation with the smallest rotation angle is the one
-        inside the misorientation fundamental zone (FZ, asymmetric
-        domain) given by the proper point groups of :attr:`symmetry`.
-        The definition of the FZ follows the procedure in section 5.3.1
-        in :cite:`martineau2020multivariate`.
-
-        An alternative description of finding the Rodrigues FZ is given
-        in :cite:`morawiec1996rodrigues`, which is the basis for
-        reduction of (mis)orientations in EMsoft.
+        A longer description of fundamental zones can be found in the
+        docstring for 
+        :func:`orix.quaternion.OrientationRegion.from_symmetry()`,
+        but to summarize, OrientationRegions are intentionally only
+        defined for proper rotations, in part because no pure
+        rotation can align a proper and improper reference frame.
+        This is irrelevant for reducing all 32 orientation
+        symmetries or 924 of the 1024 possible misorientation
+        symmetries with either centrosymmetry or at least on proper
+        point. In these cases, the reduced transform will either be
+        the unique representation within the fundamental zone, or
+        it will share it with a paired inverted form with an
+        identical quaternion value. For the remains 100 cases, it is
+        possible to have a second quasi-proper representation
+        in the fundamental zone resulting from two rotoinversions.
+        Orix ignores these when reducing misorientations.
         """
         # Combine symmetry elements of start and end of transformation
         # given by the (mis)orientation
