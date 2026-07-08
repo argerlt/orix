@@ -31,7 +31,6 @@ import numpy as np
 from scipy.spatial.transform import Rotation as SciPyRotation
 from tqdm import tqdm
 
-from orix._utils.deprecation import deprecated
 from orix.quaternion._numba import _mori_distance_matrix
 from orix.quaternion.orientation_region import OrientationRegion
 from orix.quaternion.rotation import Rotation
@@ -392,34 +391,6 @@ class Misorientation(Rotation):
         equivalent = Gr.outer(M.outer(Gl))
 
         return self.__class__(equivalent).flatten()
-
-    @deprecated(since="0.14", removal="0.15", alternative="reduce")
-    def map_into_symmetry_reduced_zone(self, verbose: bool = False) -> Misorientation:
-        """Return equivalent transformations which have the smallest
-        angle of rotation as a new misorientation.
-
-        Parameters
-        ----------
-        verbose
-            Whether to print a progressbar. Default is ``False``.
-
-        Returns
-        -------
-        M
-            A new misorientation object with the assigned symmetry.
-
-        Examples
-        --------
-        >>> from orix.quaternion.symmetry import C4, C2
-        >>> data = np.array([[0.5, 0.5, 0.5, 0.5], [0, 1, 0, 0]])
-        >>> M = Misorientation(data)
-        >>> M.symmetry = (C4, C2)
-        >>> M.map_into_symmetry_reduced_zone()
-        Misorientation (2,) 4, 2
-        [[-0.7071  0.7071  0.      0.    ]
-        [ 0.      1.      0.      0.    ]]
-        """
-        return self.reduce(verbose)
 
     def reduce(self, verbose: bool = False) -> Misorientation:
         """Return equivalent transformations which have the smallest
