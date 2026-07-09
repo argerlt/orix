@@ -495,6 +495,15 @@ def test_get_nearest():
     with pytest.raises(AttributeError, match="`get_nearest` only works for "):
         v.get_nearest(v_ref)
 
+def test_tuples():
+    v = Vector3d(np.zeros([10,3]))
+    tup = v._tuples
+    assert len(tup) == 1
+    v = Vector3d(np.arange(30).reshape([10,3]))
+    tup = v._tuples
+    assert len(tup) == 10
+    
+
 
 class TestSpareNotImplemented:
     def test_radd_notimplemented(self, vector):

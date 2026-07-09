@@ -475,7 +475,7 @@ class Misorientation(Rotation):
             if not is_outside.any():
                 break
         # convert to northern hemisphere representations
-        # reduced.data[reduced.a<0] = reduced.data[reduced.a<0]*-1
+        reduced.data[reduced.a<0] = reduced.data[reduced.a<0]*-1
         reduced._symmetry = (start, end)
         return reduced
 
@@ -755,7 +755,7 @@ class Misorientation(Rotation):
         rots = Rotation(neighbors.data)
         rough_mean = rots.mean(weights=weights)
 
-        max_dp = np.zeros(rots.shape, dtype=float)
+        max_dp = rots.dot(rough_mean)
         start, end = self._symmetry
         if not include_improper:
             start = start.proper_subgroup
@@ -767,7 +767,7 @@ class Misorientation(Rotation):
             symmetry_pairs = tqdm(symmetry_pairs, total=s)
         for start, end in symmetry_pairs:
             candidates = end * rots * start
-            dp = candidates.dot(rough_mean)
+            dp = np.abs(candidates.dot(rough_mean))
             mask = dp > max_dp
             # copy quaternion plus improper marker
             neighbors._data[mask, :] = candidates._data[mask, :]
