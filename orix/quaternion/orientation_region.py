@@ -238,33 +238,31 @@ class OrientationRegion(Rotation):
             # consideration when reducing or averaging misorientations.
             if start.contains_inversion != end.contains_inversion:
                 # The remaining case is when only one of the two groups
-                # contains an inversion. Here, it is necessary to add an
-                # inversion to the non-centrosymmetric group to produce
-                # a unique fundamental zone. 
+                # contains an inversion. In this case, the combination of
+                # an inversion and rotation creates a mirror that needs to
+                # be added to the disjoint group. this is easiest done
+                # by converting the inversion-less symmetry to it's laue
+                # symmetry.
                 if not start.contains_inversion:
                     start = start.laue
                 if not end.contains_inversion:
                     end = end.laue
+        # with mirrors from inversion/rotoinversion combinations accounted
+        # for, remove all improper operators.
         start = start.proper_subgroup
         end = end.proper_subgroup
 
         # Step 2: define the bounding cells using the distinguished points.
+        # This is equivalent to the voronoi tesselation described in Krakow,
+        # but done in rodrigues space to take advantage of rectilinear planes.
         dp = get_distinguished_points(start, end)
         large_cell_normals = _get_large_cell_normals(dp)
 
         # Step 3: (only for misorientations) restrict the domain to the
         # fundamental sector of the pole figure of the shared symmetries.
         disjoint = start & end
-        # if a is True:
-        #     disjoint = Symmetry.from_generators(disjoint,Ci)
         fz = disjoint.fundamental_zone()
         fz_normals = Rotation.from_axes_angles(fz, np.pi)
-        # if a is True:
-        #     fz_normals =Rotation(np.concatenate([fz_normals.data,np.array([[0,1,0,0],
-        #                                                                    [0,0,1,0],
-        #                                                                    [0,0,0,1]])]))
-        # Step 4: combine these restrictions into a single domain, and
-        # remove redundant or unused boundares.
         normals = Rotation(np.concatenate([large_cell_normals.data, fz_normals.data]))
         region = cls(normals)
         vertices = region.vertices()

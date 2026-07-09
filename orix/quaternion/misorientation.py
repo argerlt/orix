@@ -396,7 +396,7 @@ class Misorientation(Rotation):
         """Return symmetrically equivalent transformations with the
         smallest angle of rotation.
 
-        for misorientations, reduced representations are further
+        For misorientations, reduced representations are further
         restricted to transforms inside their symmetry's fundamental
         zone. See Notes section for details.
         
@@ -423,22 +423,32 @@ class Misorientation(Rotation):
 
         Notes
         -----
-        A longer description of fundamental zones can be found in the
-        docstring for 
-        :func:`orix.quaternion.OrientationRegion.from_symmetry()`,
-        but to summarize, OrientationRegions are intentionally only
-        defined for proper rotations, in part because no pure
-        rotation can align a proper and improper reference frame.
-        This is irrelevant for reducing all 32 orientation
-        symmetries or 924 of the 1024 possible misorientation
-        symmetries with either centrosymmetry or at least on proper
-        point. In these cases, the reduced transform will either be
-        the unique representation within the fundamental zone, or
-        it will share it with a paired inverted form with an
-        identical quaternion value. For the remains 100 cases, it is
-        possible to have a second quasi-proper representation
-        in the fundamental zone resulting from two rotoinversions.
-        Orix ignores these when reducing misorientations.
+        In ORIX, fundamental zones are defined as bounded volumes in
+        quaternion space containing only proper rotations. This is
+        a common convention, for reasons discussed in the docstring
+        of :func:`orix.quaternion.OrientationRegion.from_symmetry()`.
+
+        This is relevant for defining a reduced representation
+        because the brute force expansion of a misorientation to it's
+        symmetric equivalents can produce up to four unique
+        rotations that fall inside the fundamental zone and also all
+        have the same rotation angle.
+
+        For all orientations and 924 of the possible 1024
+        misorientation symmetries, this fact is irrelevant, as either
+        only a single proper rotation or an identical proper
+        and improper pair will map to the fundamental zone.
+        
+        The remaining 100 cases occur when both symmetries are
+        improper and don't possess an inversion. In this case, four
+        unique values fall within the fundamental zone, including
+        two proper rotations. One of these is produced using only
+        proper rotations, whereas the second is a pseudo-proper
+        rotatoin resulting from two consecutive rotoinversions.
+        
+        Since pseudo-proper variants cannot be reached through any
+        combination of proper rotations from either symmetry, they
+        are ignored by ORIX and only the proper rotation is returned.
         """
         # Combine symmetry elements of start and end of transformation
         # given by the (mis)orientation
@@ -454,7 +464,7 @@ class Misorientation(Rotation):
         # inside the FZ. Ignore symmetry combinations that need an inversion,
         # as these are not handled by the MacKenzie/Rodrigues definitions of
         # a fundamental zone.
-        fz = OrientationRegion.from_symmetry(s1=start, s2=end)
+        fz = OrientationRegion.from_symmetry(start=start, end=end)
         reduced = self.__class__.identity(self.shape)
         is_outside = np.ones(self.shape, dtype=bool)
         for sym_start, sym_end in symmetry_pairs:
@@ -658,6 +668,117 @@ class Misorientation(Rotation):
     def inv(self) -> Misorientation:
         r"""Return the inverse misorientations :math:`M^{-1}`."""
         return self.__invert__()
+
+    def mean(
+        self,
+        weights: np.ndarray | None = None,
+        include_improper: bool = False,
+        ignore_symmetry: bool = False,
+        return_neighbors: bool = False,
+        verbose: bool = False,
+    ) -> Misorientation:
+        """Return the symmetry-respecting mean (mis)orientation.
+
+        Parameters
+        ----------
+        weights
+            An optional array of weights for calculating a weighted
+            average instead of the unweighted mean. Must be the same
+            size as the quaternion array.
+
+        include_improper
+            If True, equivalent representations that require inversion
+            symmetry to calculate will be excluded. See Notes for
+            details. Default is False.
+
+        ignore_symmetry
+            If True, ignore all symmetry considerations. See Notes
+            for detials. Default is False.
+
+        return_neighbors
+            If True, returns the nearest neighbors used to calculate
+            the mean. Default is False.
+
+        verbose
+            If True, print progress bars. Default is False.
+
+        Returns
+        -------
+        mean
+            Mean (mis)orientation.
+
+        neighbors
+            If `return_neighbors` is True, returns the
+            representations used to calculate the mean.
+
+        Notes
+        -----
+        This method uses the Frobenius norm of rotation space to
+        define a mean for rotations, as given in equations 12 and 13
+        of :cite:`markley_averaging_2007`. Refer to
+        :func:`orix.quaternion.Quaternion.mean` for details.
+
+        To account for symmetry, the following proceedure is used:
+
+            1) Misorientations are reduced to the fundamental zone.
+            2) The rough mean is calculated.
+            3) Misorientations with equivalent values closer to the
+               rough mean are updated to the nearby value.
+            4) The precise mean is recalculated.
+
+        if ``ignore_symmetry`` is True, steps 3 and 4 are skipped,
+        and the mean is given as a Rotation to signify the loss of
+        symmetry information.
+
+        Since a pure rotation cannot align an inverted reference
+        frame with an uninverted one, a Frobenius norm cannot be
+        calculated for a mix of proper and improper rotations. 
+        By default, this problem is addressed by ignoring
+        symmetrically equivalent operations that include inversion.
+        This aligns with the definition of a fundamental zone in
+        orientation space used in 
+        :func:`orix.quaternion.Misorientation.reduce` and
+        :func:`orix.quaternion.OrientationRegion.from_symmetry`.
+        Setting `include_improper=True` will instead investigate all
+        symmetry options and treat all options as proper rotations
+        when calculating the mean.
+        """
+        if ignore_symmetry is True:
+            # convert to a rotation to emphasize loss of symmetry information
+            return Rotation(self.data).mean(weights=weights)
+
+        if verbose:
+            print("reducing to fundamental zone...")
+        # overwrite new nearest values into neighbors. Use rot for calculating
+        # candidate for inclusion in neighbors.
+        neighbors = self.reduce(verbose=verbose)
+        rots = Rotation(neighbors.data)
+        rough_mean = rots.mean(weights=weights)
+
+        max_dp = np.zeros(rots.shape, dtype=float)
+        start, end = self._symmetry
+        if not include_improper:
+            start = start.proper_subgroup
+            end = end.proper_subgroup
+        symmetry_pairs = iproduct(Rotation(start), Rotation(end))
+        if verbose:
+            print("checking for closer equivalent representations...")
+            s = start.size*end.size
+            symmetry_pairs = tqdm(symmetry_pairs, total=s)
+        for start, end in symmetry_pairs:
+            candidates = end * rots * start
+            dp = candidates.dot(rough_mean)
+            mask = dp > max_dp
+            # copy quaternion plus improper marker
+            neighbors._data[mask, :] = candidates._data[mask, :]
+            max_dp[dp > max_dp] = dp[dp > max_dp]
+
+        fine_mean_rot = Rotation(neighbors.data).mean(weights=weights)
+        fine_mean = self.__class__(fine_mean_rot)
+        fine_mean._symmetry = self._symmetry
+        if return_neighbors:
+            return [fine_mean, neighbors]
+        return fine_mean
 
 
 def _get_distance_matrix_dask(
