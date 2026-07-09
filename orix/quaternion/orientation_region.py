@@ -24,13 +24,40 @@ import itertools
 import numpy as np
 
 from orix._utils import constants
+from orix._utils.deprecation import deprecated
 from orix.quaternion.quaternion import Quaternion
 from orix.quaternion.rotation import Rotation
 from orix.quaternion.symmetry import C1, Symmetry, get_distinguished_points
 from orix.vector.neo_euler import Rodrigues
 
+def _get_large_cell_normals(
+        start:Symmetry=C1, end:Symmetry=C1, dp:Rotation=None) ->Rotation:
+    """Return rotations defining fundamental zone bounds due to
+    symmetry.
 
-def _get_large_cell_normals(dp):
+    Given two symmetries, calculates every unique rotation equivalent
+    to the identity, called "distinguished points". A Voronoi
+    tessletation is then done to define the bounds within which all
+    rotations are closer to identity than any distinguished points.
+
+    Instead of calculating them, a set of distinguished points can
+    also be added by the user, in which case the symmetry arguments
+    will be ignored. This is useful for defining non-crystallographic
+    orientation regions.
+    Parameters
+    ----------
+    start
+        Starting symmetry
+    end
+        Ending symmetry
+    dp
+        Optional. set of rotations that are equivalent to identity.
+        If given, s1 and s2 will be ignored, and the normals will
+        be defined via tesselation of these points.
+    
+    """
+    if dp is None:
+        dp = get_distinguished_points(start, end)
 
     if dp.size == 0:
         return Rotation.empty()
@@ -55,6 +82,7 @@ def _get_large_cell_normals(dp):
     return normals
 
 
+@deprecated(since="0.15", removal="0.16")
 def get_proper_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetry]:
     """Return the appropriate groups for the asymmetric domain
     calculation.
@@ -79,20 +107,21 @@ def get_proper_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetr
     from in :cite:`krakow2017onthree`. However, for reasons given
     in section 3(b), that paper only defines domains for the 121
     combinations of proper point groups. Orix extends their logic for
-    defining domains to the remaining 903 point group combinations.
+    defining domains to the remaining 903 point group combinations,
+    which are always repetitions of the original 121.
 
-    This is a trivial terminology issue for all orientations as well
-    as any misorientations where both point groups are proper and/or
-    centrosymmetric, which together account for 704 of the possible
-    1024 symmetry cases. This includes data from EBSD due to the
-    artificial centrosymmetry introduced in kikuchi diffraction.For
-    the remaining 320 misorientations where one or both point groups
-    improper and not centrosymmetric (for example, 6mm-->6mm)
-    there is always one and occasionally 2 improper rotations that
-    also map to the fundamental zone, as well as a possible
-    pseudo-proper rotation only achievable by  combining two
-    roto-inversions.(ex., 6mm). There is currently no concencus in
-    literature on how to handle these rare edge cases.
+    This expansion is unimportant for all orientations as well
+    as any misorientations where at least on point group is proper
+    and/or centrosymmetric, which together accounts for 924 of the
+    possible 1024 possible misorientation symmetries. This includes
+    all data from EBSD due to the artificial centrosymmetry caused by
+    kikuchi diffraction. For the remaining 100 misorientations where
+    both point groups are improper but don't contain an inversion
+    (for example, 6mm-->6mm), there are up to four rotations that
+    map to the fundamental zone; a proper, two improper, and a
+    pseudo-proper created from two roto-inversions. Common practice
+    in these edge cases is to ignore all but the proper rotation, as
+    is done in :func:`Misorientation.reduce`.
     """
     if start.is_proper and end.is_proper:
         return start, end
@@ -225,17 +254,21 @@ class OrientationRegion(Rotation):
         # Step 1: fundamental zones are only defined for proper rotations.
         # add inversion centers where necessary to define as unique as
         # possible of a fundamental zone, then remove all improper operators.
-        # if either symmetry is proper, any improper symmetries of the second
+
+        # If either symmetry is proper, any improper symmetries of the second
         # group will fall outside the shared fundamental zone.
         if not start.is_proper and not end.is_proper:
             # If both symmetries contain an inversion, all improper operators
             # will have a paired proper operator. If neither do, the proper
             # and improper rotations will form two identical but inverted
             # fundamental zones. Both cases produce one proper, two improper,
-            # and one pseudo-proper fundamental zone, but in the first case 
-            # they are aligned, and in the second case they are inverted.
-            # The second case is the problematic form that requires
-            # consideration when reducing or averaging misorientations.
+            # and one pseudo-proper fundamental zone, but the first case is
+            # uninteresting because they have idencial quaternion
+            # representations. The second case requires some special
+            # consideration when using fundamental zones for averages or
+            # reducing. Regardless though, for both cases, reducing both
+            # symmetries to their proper subgroup gives the correct
+            # fundamental zone.
             if start.contains_inversion != end.contains_inversion:
                 # The remaining case is when only one of the two groups
                 # contains an inversion. In this case, the combination of
@@ -247,8 +280,9 @@ class OrientationRegion(Rotation):
                     start = start.laue
                 if not end.contains_inversion:
                     end = end.laue
-        # with mirrors from inversion/rotoinversion combinations accounted
-        # for, remove all improper operators.
+        # With mirrors from inversion/rotoinversion combinations accounted
+        # for, remove all improper operators. The fundamental zone will now be
+        # one of the 61 in Table 3 of krakow2017. 
         start = start.proper_subgroup
         end = end.proper_subgroup
 
@@ -256,6 +290,8 @@ class OrientationRegion(Rotation):
         # This is equivalent to the voronoi tesselation described in Krakow,
         # but done in rodrigues space to take advantage of rectilinear planes.
         dp = get_distinguished_points(start, end)
+        # These large cell normals are always one of the 15 from figure 5 of
+        # krakow2017
         large_cell_normals = _get_large_cell_normals(dp)
 
         # Step 3: (only for misorientations) restrict the domain to the
