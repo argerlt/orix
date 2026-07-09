@@ -24,7 +24,7 @@ import itertools
 import numpy as np
 
 from orix._utils import constants
-from orix._utils.deprecation import deprecated
+from orix._utils.deprecation import deprecated, deprecated_argument
 from orix.quaternion.quaternion import Quaternion
 from orix.quaternion.rotation import Rotation
 from orix.quaternion.symmetry import C1, Symmetry, get_distinguished_points
@@ -196,10 +196,14 @@ class OrientationRegion(Rotation):
     # ------------------------ Class methods ------------------------- #
 
     @classmethod
+    @deprecated_argument("s1",since="0.15", removal="0.16",alternative='start')
+    @deprecated_argument("s2",since="0.15", removal="0.16",alternative='end')
     def from_symmetry(
             cls,
             start: Symmetry = C1,
             end: Symmetry = C1,
+            s1 = None,
+            s2 = None,
             ) -> OrientationRegion:
         """ Return an orientation region for a given symmetry.
 
@@ -251,6 +255,10 @@ class OrientationRegion(Rotation):
         on how to define unique fundamental zones for these edge
         cases.
         """
+        if s1 is not None:
+            start = s1
+        if s2 is not None:
+            end = s2
         # Step 1: fundamental zones are only defined for proper rotations.
         # add inversion centers where necessary to define as unique as
         # possible of a fundamental zone, then remove all improper operators.

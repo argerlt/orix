@@ -121,6 +121,9 @@ def test_get_distinguished_points(s1, s2, expected):
 def test_get_large_cell_normals(s1, s2, expected):
     n = _get_large_cell_normals(s1, s2)
     assert np.allclose(n.data, expected, atol=1e-3)
+    dp =  s1.outer(s2).antipodal.unique(antipodal=False)
+    n_from_dp = _get_large_cell_normals(dp = dp)
+    assert np.allclose(n_from_dp.data, expected, atol=1e-3)
 
 
 def test_coverage_on_faces():
