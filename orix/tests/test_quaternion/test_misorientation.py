@@ -21,14 +21,15 @@ from diffpy.structure import Lattice, Structure
 import numpy as np
 import pytest
 from scipy.spatial.transform import Rotation as SciPyRotation
+from scipy.stats import norm
 
 from orix._utils.constants import VisibleDeprecationWarning
 from orix.crystal_map import Phase
-from orix.quaternion import Misorientation
+from orix.quaternion import Misorientation, Quaternion
 
 # isort: off
-from orix.quaternion.symmetry import C1, D6, Oh, _groups
-
+from orix.quaternion.symmetry import C1, C2h, C3, C2v, D6, T, Oh, _groups
+  
 # isort: on
 from orix.vector import Miller, Vector3d
 
@@ -186,3 +187,29 @@ class TestMisorientation:
         M3 = Misorientation.random(symmetry=(Oh, D6))
         assert M3.symmetry == (Oh, D6)
 
+    def test_mean(self):
+        # create a random loosely clustered group of misorientations
+        np.random.seed(2319)
+        qu_data = np.stack([norm.rvs(i, 0.2, 20) for i in [0.3, 0.1, 0.2, 0.3]]).T
+        # The symmetries tested are Identity, a Laue, an improper, and an
+        # improper with no inversion point, which tests all combinations of
+        # OrientationRegion.from_symmetry() if/then logic.
+        syms = [C1, C2h, C3, C2v]
+        for start in syms:
+            for end in syms:
+                m = Misorientation(qu_data, symmetry=(start, end)).reduce()
+                rough = m.reduce().mean(ignore_symmetry=True)
+                prop, prop_m = m.mean(include_improper=False, return_neighbors=True)
+                fine, fine_m = m.mean(include_improper=True, return_neighbors=True, verbose=True)
+                r_dp = np.mean(Quaternion(rough.data).dot(Quaternion(m.data)))
+                f_dp = np.mean(Quaternion(fine.data).dot(Quaternion(fine_m.data)))
+                p_dp = np.mean(Quaternion(prop.data).dot(Quaternion(prop_m.data)))
+                # This isn't garunteed to work if the random seed is
+                # changed, but in general, adding symmetry restrictions should
+                # decrease the spread of the cluster.
+                assert r_dp <= p_dp
+                assert p_dp <= f_dp
+                # Test weighting
+                m1 = m[[0, 0, 0, 1, 2, 2, 4]]
+                m2 = m[:5]
+                m1.mean() == m2.mean(weights=[3, 1, 2, 0, 1])
