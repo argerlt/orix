@@ -111,7 +111,7 @@ fig2.suptitle(
 # There are several ways in which a fundamental zone can be defined, with most
 # discrepencies stemming from how improper transforms
 # (ie, inversions and rotoinversions) should be handled. ORIX uses the rules
-# presented in :cite:`Krakow krakow2017onthree`, but expanded to all 1024
+# presented in :cite:`krakow2017onthree`, but expanded to all 1024
 # misorientation groups. This can be verified by comparing the following plots
 # to Figure 5 of the same paper.
 
