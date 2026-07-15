@@ -103,11 +103,11 @@ path = Orientation.from_path_ends(points, steps=n_steps)
 path.symmetry = Oh
 
 colors2 = mpl.colormaps["inferno"](np.linspace(0, 1, n_steps))
-fig = path.scatter("rodrigues", position=121, return_figure=True, c=colors2)
-path.scatter("ipf", position=122, figure=fig, c=colors2)
+fig2 = path.scatter("rodrigues", position=121, return_figure=True, c=colors2)
+path.scatter("ipf", position=122, figure=fig2, c=colors2)
 
 # Plot the rest
-rod_ax, ipf_ax = fig.axes
+rod_ax, ipf_ax = fig2.axes
 rod_ax.set_title("Orientation paths in Rodrigues space")
 ipf_ax.set_title("Vector paths in IPF-Z", pad=15)
 
@@ -125,7 +125,9 @@ for ori_start in oris2[1:]:
 #
 # Rotate vectors around the (1, 1, 1) axis on a stereographic plot.
 
-vec_ax = plt.subplot(projection="stereographic")
+
+fig3 = plt.figure()
+vec_ax = fig3.add_subplot(111, projection="stereographic")
 vec_ax.set_title(r"Stereographic")
 vec_ax.set_labels("X", "Y")
 
