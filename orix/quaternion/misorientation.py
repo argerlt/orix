@@ -399,7 +399,7 @@ class Misorientation(Rotation):
         For misorientations, reduced representations are further
         restricted to transforms inside their symmetry's fundamental
         zone. See Notes section for details.
-        
+
         Parameters
         ----------
         verbose
@@ -438,14 +438,14 @@ class Misorientation(Rotation):
         misorientation symmetries, this fact is irrelevant, as either
         only a single proper rotation or an identical proper
         and improper pair will map to the fundamental zone.
-        
+
         The remaining 100 cases occur when both symmetries are
         improper and don't possess an inversion. In this case, four
         unique values fall within the fundamental zone, including
         two proper rotations. One of these is produced using only
         proper rotations, whereas the second is a pseudo-proper
         rotatoin resulting from two consecutive rotoinversions.
-        
+
         Since pseudo-proper variants cannot be reached through any
         combination of proper rotations from either symmetry, they
         are ignored by ORIX and only the proper rotation is returned.
@@ -469,13 +469,13 @@ class Misorientation(Rotation):
         is_outside = np.ones(self.shape, dtype=bool)
         for sym_start, sym_end in symmetry_pairs:
             if sym_start.improper != sym_end.improper:
-                continue            
+                continue
             reduced[is_outside] = sym_end * self[is_outside] * sym_start
             is_outside = ~(reduced < fz)
             if not is_outside.any():
                 break
         # convert to northern hemisphere representations
-        reduced.data[reduced.a<0] = reduced.data[reduced.a<0]*-1
+        reduced.data[reduced.a < 0] = reduced.data[reduced.a < 0] * -1
         reduced._symmetry = (start, end)
         return reduced
 
@@ -732,11 +732,11 @@ class Misorientation(Rotation):
 
         Since a pure rotation cannot align an inverted reference
         frame with an uninverted one, a Frobenius norm cannot be
-        calculated for a mix of proper and improper rotations. 
+        calculated for a mix of proper and improper rotations.
         By default, this problem is addressed by ignoring
         symmetrically equivalent operations that include inversion.
         This aligns with the definition of a fundamental zone in
-        orientation space used in 
+        orientation space used in
         :func:`orix.quaternion.Misorientation.reduce` and
         :func:`orix.quaternion.OrientationRegion.from_symmetry`.
         Setting `include_improper=True` will instead investigate all
@@ -763,7 +763,7 @@ class Misorientation(Rotation):
         symmetry_pairs = iproduct(Rotation(start), Rotation(end))
         if verbose:
             print("checking for closer equivalent representations...")
-            s = start.size*end.size
+            s = start.size * end.size
             symmetry_pairs = tqdm(symmetry_pairs, total=s)
         for start, end in symmetry_pairs:
             candidates = end * rots * start

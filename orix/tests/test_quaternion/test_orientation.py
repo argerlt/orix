@@ -393,9 +393,7 @@ class TestOrientationInitialization:
         assert o1.symmetry.name == "1"
         o2 = Orientation.from_matrix(om, symmetry=Oh)
         o2 = o2.reduce()
-        assert np.allclose(
-            o2.data, np.array([1, 0, 0, 0] * 4 ).reshape(4, 4)
-        )
+        assert np.allclose(o2.data, np.array([1, 0, 0, 0] * 4).reshape(4, 4))
         assert o2.symmetry.name == "m-3m"
         o3 = Orientation(o1.data, symmetry=Oh)
         o3 = o3.reduce()
@@ -732,15 +730,15 @@ class TestOrientation:
         np.random.seed(2319)
         for group in _groups:
             ori = Orientation.random(symmetry=group)
-            # NOTE: in the past, this test has needed a flaky flag. PR 669 
+            # NOTE: in the past, this test has needed a flaky flag. PR 669
             # should have fixed the underlying issue, but leaving a note here
             # in case a similar bug occurs in the future/
             assert np.isclose(ori.angle_with(ori.reduce()), 0)
 
     def test_dot(self):
         # assert shape is correct
-        o1 = Orientation.random(shape=(2,3,4), symmetry=T)
-        o2 = Orientation.random(shape=(5,6), symmetry=D3)
+        o1 = Orientation.random(shape=(2, 3, 4), symmetry=T)
+        o2 = Orientation.random(shape=(5, 6), symmetry=D3)
         o12 = o2.dot_outer(o1)
-        assert o12.shape == (2,3,4,5,6)
-        assert np.all(o12[1,2,:,3,2] == o2[3,2].dot(o1[1,2,:]))
+        assert o12.shape == (2, 3, 4, 5, 6)
+        assert np.all(o12[1, 2, :, 3, 2] == o2[3, 2].dot(o1[1, 2, :]))

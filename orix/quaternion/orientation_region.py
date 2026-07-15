@@ -30,8 +30,10 @@ from orix.quaternion.rotation import Rotation
 from orix.quaternion.symmetry import C1, Symmetry, get_distinguished_points
 from orix.vector.neo_euler import Rodrigues
 
+
 def _get_large_cell_normals(
-        start:Symmetry=C1, end:Symmetry=C1, dp:Rotation=None) ->Rotation:
+    start: Symmetry = C1, end: Symmetry = C1, dp: Rotation = None
+) -> Rotation:
     """Return rotations defining fundamental zone bounds due to
     symmetry.
 
@@ -54,7 +56,7 @@ def _get_large_cell_normals(
         Optional. set of rotations that are equivalent to identity.
         If given, s1 and s2 will be ignored, and the normals will
         be defined via tesselation of these points.
-    
+
     """
     if dp is None:
         dp = get_distinguished_points(start, end)
@@ -142,7 +144,7 @@ def get_proper_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetr
 
 class OrientationRegion(Rotation):
     """A subset of rotation space.
-    
+
     The complete set of all possible rigid body rotations is called
     SO(3). it can be thought of as half the quaternion unit sphere,
     the entirety of Rodrigues space, the set of all 3x3 matrices
@@ -156,7 +158,7 @@ class OrientationRegion(Rotation):
     space. This can be most easily visualized using Rodrigues
     space, where the boundaries become flat planes normal to the
     rodrigues vectors of those bounding rotations.
-    
+
     .. image:: /_static/img/orientation-region-Oq.png
        :width: 300px
        :alt: Boundaries of an orientation region in Rodrigues space.
@@ -196,16 +198,16 @@ class OrientationRegion(Rotation):
     # ------------------------ Class methods ------------------------- #
 
     @classmethod
-    @deprecated_argument("s1",since="0.15", removal="0.16",alternative='start')
-    @deprecated_argument("s2",since="0.15", removal="0.16",alternative='end')
+    @deprecated_argument("s1", since="0.15", removal="0.16", alternative="start")
+    @deprecated_argument("s2", since="0.15", removal="0.16", alternative="end")
     def from_symmetry(
-            cls,
-            start: Symmetry = C1,
-            end: Symmetry = C1,
-            s1 = None,
-            s2 = None,
-            ) -> OrientationRegion:
-        """ Return an orientation region for a given symmetry.
+        cls,
+        start: Symmetry = C1,
+        end: Symmetry = C1,
+        s1=None,
+        s2=None,
+    ) -> OrientationRegion:
+        """Return an orientation region for a given symmetry.
 
         These regions are identical to the fundamental zone for all
         orientations and every misorientation where both
@@ -244,7 +246,7 @@ class OrientationRegion(Rotation):
         region returned bounds a fully unique zone, or it bounds
         all proper representations, and the improper representations
         have identical quaternion representations.
-        
+
         For the remaining 320 misorientations where one or both
         point groups contain rotoinversions but are not
         centrosymmetric (for example, 6mm --> 6mm), there are always
@@ -290,7 +292,7 @@ class OrientationRegion(Rotation):
                     end = end.laue
         # With mirrors from inversion/rotoinversion combinations accounted
         # for, remove all improper operators. The fundamental zone will now be
-        # one of the 61 in Table 3 of krakow2017. 
+        # one of the 61 in Table 3 of krakow2017.
         start = start.proper_subgroup
         end = end.proper_subgroup
 

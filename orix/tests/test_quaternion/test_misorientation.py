@@ -29,7 +29,7 @@ from orix.quaternion import Misorientation, Quaternion
 
 # isort: off
 from orix.quaternion.symmetry import C1, C2h, C3, C2v, D6, T, Oh, _groups
-  
+
 # isort: on
 from orix.vector import Miller, Vector3d
 
@@ -201,13 +201,19 @@ class TestMisorientation:
                 # Test every variant of inputs works
                 rough = m.reduce().mean(ignore_symmetry=True)
                 p_mean, p_neigh = m.mean(include_improper=False, return_neighbors=True)
-                f_mean, f_neigh = m.mean(include_improper=True, return_neighbors=True, verbose=True)
+                f_mean, f_neigh = m.mean(
+                    include_improper=True, return_neighbors=True, verbose=True
+                )
                 # for the three above calls, the deviation of the mean might
                 # lessen as symmetry constrains are added, and will never
                 # increase
                 r_dp = np.mean(np.abs(Quaternion(rough.data).dot(Quaternion(m.data))))
-                f_dp = np.mean(np.abs(Quaternion(f_mean.data).dot(Quaternion(f_neigh.data))))
-                p_dp = np.mean(np.abs(Quaternion(p_mean.data).dot(Quaternion(p_neigh.data))))
+                f_dp = np.mean(
+                    np.abs(Quaternion(f_mean.data).dot(Quaternion(f_neigh.data)))
+                )
+                p_dp = np.mean(
+                    np.abs(Quaternion(p_mean.data).dot(Quaternion(p_neigh.data)))
+                )
                 assert r_dp <= p_dp
                 assert p_dp <= f_dp
                 # Test weighting

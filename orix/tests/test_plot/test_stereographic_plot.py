@@ -370,7 +370,7 @@ class TestStereographicPlot:
         assert len(ax.texts) == 0
 
         # Check a stereographic plot was still made
-        assert ax._has_collection('_stereographic_polar_grid')[0]
+        assert ax._has_collection("_stereographic_polar_grid")[0]
 
         plt.close("all")
 
