@@ -32,7 +32,6 @@ if TYPE_CHECKING:  # pragma: no cover
     from orix.quaternion.orientation import Orientation
     from orix.vector.fundamental_sector import FundamentalSector
 
-
 VALID_SYSTEMS = Literal[
     "triclinic",
     "monoclinic",
@@ -85,19 +84,48 @@ class Symmetry(Rotation):
 
     @property
     def subgroups(self) -> list[Symmetry]:
-        """Return the list groups that are subgroups of this group."""
-        return [g for g in _groups if g._tuples <= self._tuples]
+        """Return all the crystal symmetry subgroups.
+
+        There are 32 distinct crystal groups possible for a infinitely
+        repeating lattice of unit cells. These groups decompose into 37
+        unique subgroups, which include the rotations and rotoinversions
+        around non-primary axes. ie, a two-fold rotation around the
+        z axis (C2z) is considered distinct form a two-fold rotation
+        around the x axis (C2x).
+
+        This function returns the subset of those 37 groups that are
+        fully contained within this symmetry.
+        """
+        groups = _symm_lists["permutations"]
+        return [g for g in groups if g._tuples <= self._tuples]
 
     @property
     def proper_subgroups(self) -> list[Symmetry]:
-        """Return the list of proper groups that are subgroups of this
-        group.
+        """Return all the proper crystal symmetry subgroups.
+
+        There are 32 distinct crystal groups possible for a infinitely
+        repeating lattice of unit cells. These groups decompose into 37
+        unique subgroups, which include the rotations and rotoinversions
+        around non-primary axes. ie, a two-fold rotation around the
+        z axis (C2z) is considered distinct form a two-fold rotation
+        around the x axis (C2x) for the purpose of this definition.
+
+        Of these 37 groups, 14 contain only purely rotational
+        (ie "proper") elements.
+
+        This function returns the subset of those 14 groups that are
+        fully contained within this symmetry.
         """
         return [g for g in self.subgroups if g.is_proper]
 
     @property
     def proper_subgroup(self) -> Symmetry:
-        """Return the largest proper group of this subgroup."""
+        """Return the largest proper subgroup.
+
+        In this context, 'largest' is the subgroup containing the
+        most elements. for details on how proper subgroups are defined,
+        refer to :func:`orix.quaternion.symmetry.Symmetry.proper_subgroups`
+        """
         subgroups = self.proper_subgroups
         if len(subgroups) == 0:
             return Symmetry(self)
@@ -107,19 +135,32 @@ class Symmetry(Rotation):
 
     @property
     def laue(self) -> Symmetry:
-        """Return this group plus inversion."""
+        """Return this symmetry combined with an inversion operation.
+
+        The subset of cyrstal symmetries containing inversion points
+        are called Laue groups. This function calculates every unique
+        element possible from permutations of this group with the
+        inversion operation, and returns the Laue group matching the
+        result.
+        """
         laue = Symmetry.from_generators(self, Ci)
         laue.name = _get_laue_group_name(self.name)
         return laue
 
     @property
     def laue_proper_subgroup(self) -> Symmetry:
-        """Return the proper subgroup of this group plus inversion."""
+        """Return the largest proper subgroup of the Laue group.
+
+        Refer to :func:`orix.quaternion.symmetry.Symmetry.laue` for a
+        proper definition of Laue groups. This function finds the
+        appropriate Laue group and returns it's largest subgroup
+        containing only rotational elements.
+        """
         return self.laue.proper_subgroup
 
     @property
     def contains_inversion(self) -> bool:
-        """Return whether this group contains inversion."""
+        """Return whether this group contains an inversion element."""
         return Ci._tuples <= self._tuples
 
     @property
@@ -274,8 +315,7 @@ class Symmetry(Rotation):
 
     @property
     def _primary_axis_order(self) -> int | None:
-        """Return the order of primary rotation axis for the proper
-        subgroup.
+        """Return the order of primary proper rotation axis.
 
         Used in to map Euler angles into the fundamental region in
         :meth:`~orix.quaternion.Orientation.in_euler_fundamental_region`.
@@ -373,8 +413,7 @@ class Symmetry(Rotation):
 
     @classmethod
     def from_generators(cls, *generators: Rotation) -> Symmetry:
-        """Create a Symmetry from a minimum list of generating
-        transformations.
+        """Create a Symmetry from a list of generating transforms.
 
         Parameters
         ----------
@@ -420,6 +459,8 @@ class Symmetry(Rotation):
     # --------------------- Other public methods --------------------- #
 
     def get_axis_orders(self) -> dict[Vector3d, int]:
+        """Return a dictionary of every rotation axis and it's order
+        (ie, folds)"""
         s = self[self.angle > 0]
         if s.size == 0:
             return {}
@@ -429,6 +470,8 @@ class Symmetry(Rotation):
         }
 
     def get_highest_order_axis(self) -> tuple[Vector3d, np.ndarray]:
+        """Return the highest order rotational axis and it's order
+        (ie, folds)"""
         axis_orders = self.get_axis_orders()
         if len(axis_orders) == 0:
             return Vector3d.zvector(), np.inf
@@ -541,6 +584,34 @@ class Symmetry(Rotation):
         if return_figure:
             return figure
 
+
+# ---------------- Proceedural definitions of Point Groups ---------------- #
+# NOTE: ORIX uses Schoenflies symbols to define point groups. This is partly
+# because the notation is short and always starts with a letter (ie, they
+# make convenient python variables), and partly because it helps limit
+# accidental misinterpretation of Hermann-Mauguin symbols as space group
+# numbers. For example. "222" could be interpreted as SG#222 == Pn-3n, or
+# as PG'222'== D3.  there are similar examples with 2, 3, 4, 32, etc.
+
+# Additionally, there are 43 crystallographically valid Schonflies group
+# notations, but only 32 unique ones, meaning certain point groups have
+# redundant representations in Schonflies notation(S4==C4i, Ci==S2, S6==C3i,
+# and C2==D1, for example). The International Tables for Crystallography (ITC),
+# Volume A, Section 12.1 defines the 32 standard representations, but several
+# the commonly used redundant ones included below for convenience.
+
+# Finally, while there are 32 Point groups, ITC names several additional
+# projections for the non-centrosymmetric groups (ie, using x and/or y as the
+# rotation axis instead of z). These are included below as well, following
+# the ITC naming convention (for example, a 2-fold cyclic rotation around
+# the x axis is called C2x, but a 2-fold cyclic rotation around the z axis
+# is just called C2).
+
+# For more details on how point groups can be generated, the following
+# resources lay out three different but equally valid approaches:
+#    1)"Structure of Materials", De Graef et al, Section 9.2
+#    2)"International Tables for Crystallography: Volume A" Section 12.1
+#    3)"Crystallogrpahic Texture and Group Representations", Chi-Sing Man, Ch2
 
 # Triclinic
 C1 = Symmetry((1, 0, 0, 0))
@@ -1011,6 +1082,8 @@ def get_distinguished_points(s1: Symmetry, s2: Symmetry = C1) -> Rotation:
     return distinguished_points[distinguished_points.angle > 0]
 
 
+# Dictionary used to convert diffpy.structure space group names to their
+# equivalent orix.symmetry.Symmetry objects.
 spacegroup2pointgroup_dict = {
     "PG1": {"proper": C1, "improper": C1},
     "PG1bar": {"proper": C1, "improper": Ci},
