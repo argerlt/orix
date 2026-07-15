@@ -198,15 +198,16 @@ class TestMisorientation:
         for start in syms:
             for end in syms:
                 m = Misorientation(qu_data, symmetry=(start, end)).reduce()
+                # Test every variant of inputs works
                 rough = m.reduce().mean(ignore_symmetry=True)
-                prop, prop_m = m.mean(include_improper=False, return_neighbors=True)
-                fine, fine_m = m.mean(include_improper=True, return_neighbors=True, verbose=True)
-                r_dp = np.mean(Quaternion(rough.data).dot(Quaternion(m.data)))
-                f_dp = np.mean(Quaternion(fine.data).dot(Quaternion(fine_m.data)))
-                p_dp = np.mean(Quaternion(prop.data).dot(Quaternion(prop_m.data)))
-                # This isn't garunteed to work if the random seed is
-                # changed, but in general, adding symmetry restrictions should
-                # decrease the spread of the cluster.
+                p_mean, p_neigh = m.mean(include_improper=False, return_neighbors=True)
+                f_mean, f_neigh = m.mean(include_improper=True, return_neighbors=True, verbose=True)
+                # for the three above calls, the deviation of the mean might
+                # lessen as symmetry constrains are added, and will never
+                # increase
+                r_dp = np.mean(np.abs(Quaternion(rough.data).dot(Quaternion(m.data))))
+                f_dp = np.mean(np.abs(Quaternion(f_mean.data).dot(Quaternion(f_neigh.data))))
+                p_dp = np.mean(np.abs(Quaternion(p_mean.data).dot(Quaternion(p_neigh.data))))
                 assert r_dp <= p_dp
                 assert p_dp <= f_dp
                 # Test weighting
