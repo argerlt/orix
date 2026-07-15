@@ -90,11 +90,11 @@ def test_quaternion_subclasses_copy_constructor_casting():
         # 7pi/12 -C2-> # 7pi/12
         ([(0.6088, 0, 0, 0.7934)], C2, [(-0.7934, 0, 0, 0.6088)]),
         # 7pi/12 -C3-> # 7pi/12
-        ([(0.6088, 0, 0, 0.7934)], C3, [(-0.9914, 0, 0, 0.1305)]),
+        ([(0.6088, 0, 0, 0.7934)], C3, [(0.9914, 0, 0, -0.1305)]),
         # 7pi/12 -C4-> # pi/12
-        ([(0.6088, 0, 0, 0.7934)], C4, [(-0.9914, 0, 0, -0.1305)]),
+        ([(0.6088, 0, 0, 0.7934)], C4, [(0.9914, 0, 0, 0.1305)]),
         # 7pi/12 -O-> # pi/12
-        ([(0.6088, 0, 0, 0.7934)], O, [(-0.9914, 0, 0, -0.1305)]),
+        ([(0.6088, 0, 0, 0.7934)], O, [(0.9914, 0, 0, 0.1305)]),
     ],
     indirect=["orientation"],
 )
@@ -273,7 +273,8 @@ def test_symmetry_property_wrong_type_orientation():
 
 
 @pytest.mark.parametrize(
-    "error_type, value", [(ValueError, (1, 2)), (ValueError, (C1, 2)), (TypeError, 1)]
+    "error_type, value",
+    [(ValueError, (1, 2)), (ValueError, (C1, 2)), (TypeError, 1)],
 )
 def test_symmetry_property_wrong_type_misorientation(error_type, value):
     mori = Misorientation.random((3, 2))
