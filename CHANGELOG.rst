@@ -7,6 +7,17 @@ on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`__, and this project
 its best to adhere to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 
 
+Unreleased
+==========
+
+Fixed
+-----
+- ``Rotation.to_euler()`` now returns correct Bunge Euler angles for 180 degree
+  rotations about an axis in the xy-plane not aligned with x or y. A sign error in
+  the singular branch of the quaternion-to-Euler conversion previously reflected the
+  reconstructed axis, so the angles did not round-trip back to the input rotation.
+
+
 2026-06-10 - version 0.15.0
 ===========================
 
