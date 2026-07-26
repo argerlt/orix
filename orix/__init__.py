@@ -39,4 +39,5 @@ __credits__ = [
     "Dorian Depriester",
     "Eric Prestat",
     "Alexander Clausen",
+    "Vincent Gao",
 ]
