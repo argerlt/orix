@@ -7,7 +7,7 @@ on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`__, and this project
 its best to adhere to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 
 
-2026-06-10 - version 0.15.0
+2026-06-29 - version 0.15.0
 ===========================
 
 Added
