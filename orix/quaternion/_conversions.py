@@ -1016,7 +1016,7 @@ def qu2eu_single(qu: np.ndarray) -> np.ndarray:
             a = -2 * qu[0] * qu[3]
             b = qu[0] * qu[0] - qu[3] * qu[3]
         else:
-            a = -2 * qu[1] * qu[2]
+            a = 2 * qu[1] * qu[2]
             b = qu[1] * qu[1] - qu[2] * qu[2]
             eu[1] = np.pi
         eu[0] = np.arctan2(a, b)
