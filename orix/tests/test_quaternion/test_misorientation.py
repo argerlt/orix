@@ -23,12 +23,11 @@ import pytest
 from scipy.spatial.transform import Rotation as SciPyRotation
 from scipy.stats import norm
 
-from orix._utils.constants import VisibleDeprecationWarning
 from orix.crystal_map import Phase
 from orix.quaternion import Misorientation, Quaternion
 
 # isort: off
-from orix.quaternion.symmetry import C1, C2h, C3, C2v, D6, T, Oh, _groups
+from orix.quaternion.symmetry import C1, C2h, C3, C2v, D6, Oh, _groups
 
 # isort: on
 from orix.vector import Miller, Vector3d
@@ -199,7 +198,7 @@ class TestMisorientation:
             for end in syms:
                 m = Misorientation(qu_data, symmetry=(start, end)).reduce()
                 # Test every variant of inputs works
-                rough = m.reduce().mean(ignore_symmetry=True)
+                rough = m.reduce().mean(use_symmetry=True)
                 p_mean, p_neigh = m.mean(include_improper=False, return_neighbors=True)
                 f_mean, f_neigh = m.mean(
                     include_improper=True, return_neighbors=True, verbose=True
@@ -216,7 +215,8 @@ class TestMisorientation:
                 )
                 assert r_dp <= p_dp
                 assert p_dp <= f_dp
+
                 # Test weighting
                 m1 = m[[0, 0, 0, 1, 2, 2, 4]]
                 m2 = m[:5]
-                m1.mean() == m2.mean(weights=[3, 1, 2, 0, 1])
+                assert m1.mean() == m2.mean(weights=[3, 1, 2, 0, 1])

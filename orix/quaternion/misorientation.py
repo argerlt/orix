@@ -20,7 +20,7 @@
 from __future__ import annotations
 
 from itertools import product as iproduct
-from typing import Any, Literal
+from typing import Any, Literal, overload
 import warnings
 
 import dask.array as da
@@ -669,115 +669,135 @@ class Misorientation(Rotation):
         r"""Return the inverse misorientations :math:`M^{-1}`."""
         return self.__invert__()
 
+    @overload
     def mean(
         self,
         weights: np.ndarray | None = None,
         include_improper: bool = False,
-        ignore_symmetry: bool = False,
+        use_symmetry: bool = True,
+        return_neighbors: Literal[False] = False,
+        verbose: bool = False,
+    ) -> Misorientation: ...
+
+    @overload
+    def mean(
+        self,
+        weights: np.ndarray | None = None,
+        include_improper: bool = False,
+        use_symmetry: bool = True,
+        return_neighbors: Literal[True] = True,
+        verbose: bool = False,
+    ) -> tuple[Misorientation, Rotation]: ...
+
+    def mean(
+        self,
+        weights: np.ndarray | None = None,
+        include_improper: bool = False,
+        use_symmetry: bool = True,
         return_neighbors: bool = False,
         verbose: bool = False,
-    ) -> Misorientation:
+    ) -> Misorientation | tuple[Misorientation, Rotation]:
         """Return the symmetry-respecting mean (mis)orientation.
 
         Parameters
         ----------
         weights
-            An optional array of weights for calculating a weighted
-            average instead of the unweighted mean. Must be the same
-            size as the quaternion array.
-
+            Weights for calculating a weighted average. Must be of the
+            same size as the (mis)orientation.
         include_improper
-            If True, equivalent representations that require inversion
-            symmetry to calculate will be excluded. See Notes for
-            details. Default is False.
-
-        ignore_symmetry
-            If True, ignore all symmetry considerations. See Notes
-            for detials. Default is False.
-
+            Whether to exclude equivalent representations that require
+            inversion symmetry to calculate. Default is False.
+        use_symmetry
+            Whether to consider symmetry. Default is True. If False, the
+            calculation is the same as for rotations.
         return_neighbors
-            If True, returns the nearest neighbors used to calculate
+            Whether to return the nearest neighbors used to calculate
             the mean. Default is False.
-
         verbose
-            If True, print progress bars. Default is False.
+            Whether to print progressbars. Default is False.
 
         Returns
         -------
         mean
             Mean (mis)orientation.
-
         neighbors
-            If `return_neighbors` is True, returns the
-            representations used to calculate the mean.
+            If *return_neighbors* is True, returns the representations
+            used to calculate the mean.
 
         Notes
         -----
-        This method uses the Frobenius norm of rotation space to
-        define a mean for rotations, as given in equations 12 and 13
-        of :cite:`markley_averaging_2007`. Refer to
-        :func:`orix.quaternion.Quaternion.mean` for details.
+        This method uses the Frobenius norm of rotation space to define
+        a mean for rotations, as given in equations 12 and 13 of
+        :cite:`markley_averaging_2007`. Refer to
+        :func:`~orix.quaternion.Quaternion.mean` for details.
 
-        To account for symmetry, the following proceedure is used:
+        To account for symmetry, the following procedure is used:
 
-            1) Misorientations are reduced to the fundamental zone.
-            2) The rough mean is calculated.
-            3) Misorientations with equivalent values closer to the
-               rough mean are updated to the nearby value.
-            4) The precise mean is recalculated.
+        1. Misorientations are reduced to the fundamental zone.
+        2. A rough mean is calculated.
+        3. Misorientations with equivalent values closer to the rough
+           mean are updated to the nearby value.
+        4. The precise mean is recalculated.
 
-        if ``ignore_symmetry`` is True, steps 3 and 4 are skipped,
-        and the mean is given as a Rotation to signify the loss of
-        symmetry information.
+        If *use_symmetry* is False, steps 3 and 4 are skipped, and the
+        mean is returned as a :class:`~orix.quaternion.Rotation` to
+        signify the loss of symmetry information.
 
-        Since a pure rotation cannot align an inverted reference
-        frame with an uninverted one, a Frobenius norm cannot be
-        calculated for a mix of proper and improper rotations.
-        By default, this problem is addressed by ignoring
-        symmetrically equivalent operations that include inversion.
-        This aligns with the definition of a fundamental zone in
-        orientation space used in
-        :func:`orix.quaternion.Misorientation.reduce` and
-        :func:`orix.quaternion.OrientationRegion.from_symmetry`.
-        Setting `include_improper=True` will instead investigate all
-        symmetry options and treat all options as proper rotations
-        when calculating the mean.
+        Since a pure rotation cannot align an inverted reference frame
+        with an uninverted one, a Frobenius norm cannot be calculated
+        for a mix of proper and improper rotations. By default, this
+        problem is addressed by ignoring symmetrically equivalent
+        operations that include inversion. This aligns with the
+        definition of a fundamental zone in (mis)orientation space used
+        in :meth:`~orix.quaternion.Misorientation.reduce` and
+        :meth:`~orix.quaternion.OrientationRegion.from_symmetry`.
+        Passing True to *include_improper* will instead investigate all
+        symmetry operations and treat all operations as proper when
+        calculating the mean.
         """
-        if ignore_symmetry is True:
-            # convert to a rotation to emphasize loss of symmetry information
+        if not use_symmetry:
+            # Convert to a rotation to emphasize loss of symmetry
+            # information
             return Rotation(self.data).mean(weights=weights)
 
-        if verbose:
-            print("reducing to fundamental zone...")
-        # overwrite new nearest values into neighbors. Use rot for calculating
-        # candidate for inclusion in neighbors.
-        neighbors = self.reduce(verbose=verbose)
-        rots = Rotation(neighbors.data)
-        rough_mean = rots.mean(weights=weights)
-
-        max_dp = rots.dot(rough_mean)
         start, end = self._symmetry
         if not include_improper:
             start = start.proper_subgroup
             end = end.proper_subgroup
+
         symmetry_pairs = iproduct(Rotation(start), Rotation(end))
+
+        if verbose:
+            print("reducing to fundamental zone...")
+
+        # Overwrite new nearest values into neighbors. Use rotations for
+        # calculating the candidate for inclusion in neighbors.
+        neighbors = self.reduce(verbose=verbose)
+        rot = Rotation(neighbors.data)
+        rough_mean = rot.mean(weights=weights)
+        max_dp = rot.dot(rough_mean)
+
         if verbose:
             print("checking for closer equivalent representations...")
-            s = start.size * end.size
-            symmetry_pairs = tqdm(symmetry_pairs, total=s)
+            symmetry_pairs = tqdm(symmetry_pairs, total=start.size * end.size)
+
         for start, end in symmetry_pairs:
-            candidates = end * rots * start
+            candidates = end * rot * start
             dp = np.abs(candidates.dot(rough_mean))
             mask = dp > max_dp
-            # copy quaternion plus improper marker
-            neighbors._data[mask, :] = candidates._data[mask, :]
-            max_dp[dp > max_dp] = dp[dp > max_dp]
 
-        fine_mean_rot = Rotation(neighbors.data).mean(weights=weights)
-        fine_mean = self.__class__(fine_mean_rot)
+            # Copy quaternion plus handedness
+            neighbors._data[mask, :] = candidates._data[mask, :]
+
+            max_dp[mask] = dp[mask]
+
+        fine_mean = Rotation(neighbors.data).mean(weights=weights)
+        fine_mean = self.__class__(fine_mean)
         fine_mean._symmetry = self._symmetry
+
         if return_neighbors:
-            return [fine_mean, neighbors]
+            return fine_mean, neighbors
+
         return fine_mean
 
 
