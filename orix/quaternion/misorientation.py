@@ -398,17 +398,17 @@ class Misorientation(Rotation):
 
         For misorientations, reduced representations are further
         restricted to transforms inside their symmetry's fundamental
-        zone. See Notes section for details.
+        zone. See *Notes* for details.
 
         Parameters
         ----------
         verbose
-            Whether to print a progressbar. Default is ``False``.
+            Whether to print a progressbar. Default is False.
 
         Returns
         -------
-        M
-            New misorientations with the assigned symmetry.
+        mori
+            New misorientation with the assigned symmetry.
 
         Examples
         --------
@@ -440,7 +440,7 @@ class Misorientation(Rotation):
         when both symmetries are improper and do not possess an
         inversion. In this case, four unique values fall within the FZ,
         including two proper rotations. One of these is produced using
-        only proper rotations, whereas the second is a `pseudo-proper'
+        only proper rotations, whereas the second is a 'pseudo-proper'
         rotation resulting from two consecutive rotoinversions. Since
         pseudo-proper variants cannot be reached through any combination
         of proper rotations from either symmetry, they are ignored by
@@ -718,7 +718,7 @@ class Misorientation(Rotation):
 
         Returns
         -------
-        mean
+        fine_mean
             Mean (mis)orientation.
         neighbors
             If *return_neighbors* is True, returns the representations

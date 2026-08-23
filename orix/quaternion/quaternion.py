@@ -1132,26 +1132,26 @@ class Quaternion(Object3d):
         -----
         The method used here corresponds to equations 12 and 13 in
         :cite:`markley_averaging_2007`, which simplifies to the
-        following two equations:
+        following two equations
 
-            .. math::
+        .. math::
 
-                M = \sum_{n=1}^{n}{wq_i \cdot q_i^T}
+            M = \sum_{n=1}^{n}{wq_i \cdot q_i^T},
+            q_{mean} = \max_{q \in SO(3)} \left( q^T \cdot M \cdot q \right),
 
-                q_{mean} = \max_{q \in SO(3)} \left( q^T \cdot M \cdot q \right)
-
-        Which gives the Frobenius norm of rotation space (SO(3)). This
+        which gives the Frobenius norm of rotation space (SO(3)). This
         is different from the following Euclidean-style equation
-        occasionally used elsewhere in crystallography:
+        occasionally used elsewhere in crystallography
 
-            .. math::
+        .. math::
 
-                q_{mean} = norm\left( \frac{\sum_{n=1}^{n}{wq_i }}{n} \right)
+            q_{mean} = norm\left( \frac{\sum_{n=1}^{n}{wq_i }}{n} \right),
 
-        Which gives the Frobenius norm of quaternion space (SU(2)).
+        which gives the Frobenius norm of quaternion space (SU(2)).
         These are roughly identical for closely clustered quaternions,
-        but as explained in :cite:`markley_averaging_2007`,
-        increasingly deviate as the spread in the data increases.
+        but---as explained in
+        :cite:`markley_averaging_2007`---increasingly deviate as the
+        spread in the data increases.
         """
         Q = self.flatten().data.T
         if weights is not None:
