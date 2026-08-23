@@ -32,41 +32,49 @@ from orix.vector.neo_euler import Rodrigues
 
 
 def _get_large_cell_normals(
-    start: Symmetry = C1, end: Symmetry = C1, dp: Rotation = None
+    start: Symmetry = C1,
+    end: Symmetry = C1,
+    distinguished_points: Rotation | None = None,
 ) -> Rotation:
     """Return rotations defining fundamental zone bounds due to
     symmetry.
 
     Given two symmetries, calculates every unique rotation equivalent
     to the identity, called "distinguished points". A Voronoi
-    tessletation is then done to define the bounds within which all
+    tesselation is then done to define the bounds within which all
     rotations are closer to identity than any distinguished points.
 
     Instead of calculating them, a set of distinguished points can
     also be added by the user, in which case the symmetry arguments
     will be ignored. This is useful for defining non-crystallographic
     orientation regions.
+
     Parameters
     ----------
     start
-        Starting symmetry
+        Starting symmetry.
     end
-        Ending symmetry
-    dp
-        Optional. set of rotations that are equivalent to identity.
-        If given, s1 and s2 will be ignored, and the normals will
-        be defined via tesselation of these points.
+        Ending symmetry.
+    distinguished_points
+        Set of rotations that are equivalent to identity. If given,
+        *start* and *end* will be ignored, and the normals will be
+        defined via tesselation of these points.
 
+    Returns
+    -------
+    normals
+        Rotation normals defining the fundamental zone bounds for the
+        given symmetries.
     """
-    if dp is None:
-        dp = get_distinguished_points(start, end)
+    if distinguished_points is None:
+        distinguished_points = get_distinguished_points(s1=start, s2=end)
 
-    if dp.size == 0:
+    if distinguished_points.size == 0:
         return Rotation.empty()
 
-    normals = Rodrigues.zero(dp.shape + (2,))
-    planes1 = dp.axis * np.tan(dp.angle / 4)
-    planes2 = -dp.axis * np.tan(dp.angle / 4) ** -1
+    normals = Rodrigues.zero(distinguished_points.shape + (2,))
+    planes1 = distinguished_points.axis * np.tan(distinguished_points.angle / 4)
+    planes2 = -distinguished_points.axis * np.tan(distinguished_points.angle / 4) ** -1
     planes2.data[np.isnan(planes2.data)] = 0
     normals[:, 0] = planes1
     normals[:, 1] = planes2

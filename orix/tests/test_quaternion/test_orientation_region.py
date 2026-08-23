@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -122,7 +122,7 @@ def test_get_large_cell_normals(s1, s2, expected):
     n = _get_large_cell_normals(s1, s2)
     assert np.allclose(n.data, expected, atol=1e-3)
     dp = s1.outer(s2).antipodal.unique(antipodal=False)
-    n_from_dp = _get_large_cell_normals(dp=dp)
+    n_from_dp = _get_large_cell_normals(distinguished_points=dp)
     assert np.allclose(n_from_dp.data, expected, atol=1e-3)
 
 
