@@ -408,7 +408,7 @@ class Misorientation(Rotation):
         Returns
         -------
         M
-            A new misorientation object with the assigned symmetry.
+            New misorientations with the assigned symmetry.
 
         Examples
         --------
@@ -423,37 +423,34 @@ class Misorientation(Rotation):
 
         Notes
         -----
-        In ORIX, fundamental zones are defined as bounded volumes in
-        quaternion space containing only proper rotations. This is
-        a common convention, for reasons discussed in the docstring
-        of :func:`orix.quaternion.OrientationRegion.from_symmetry()`.
+        In orix, a (mis)orientation fundamental zone (FZ) is defined as
+        a bounded volume in quaternion space containing only proper
+        rotations. This is a common convention (see
+        :meth:`~orix.quaternion.OrientationRegion.from_symmetry` for
+        details). This is relevant for defining a reduced representation
+        because the brute force expansion of a misorientation to its
+        symmetric equivalents can produce up to four unique rotations
+        that fall inside the FZ and also all have the same rotation
+        angle.
 
-        This is relevant for defining a reduced representation
-        because the brute force expansion of a misorientation to it's
-        symmetric equivalents can produce up to four unique
-        rotations that fall inside the fundamental zone and also all
-        have the same rotation angle.
-
-        For all orientations and 924 of the possible 1024
-        misorientation symmetries, this fact is irrelevant, as either
-        only a single proper rotation or an identical proper
-        and improper pair will map to the fundamental zone.
-
-        The remaining 100 cases occur when both symmetries are
-        improper and don't possess an inversion. In this case, four
-        unique values fall within the fundamental zone, including
-        two proper rotations. One of these is produced using only
-        proper rotations, whereas the second is a pseudo-proper
-        rotatoin resulting from two consecutive rotoinversions.
-
-        Since pseudo-proper variants cannot be reached through any
-        combination of proper rotations from either symmetry, they
-        are ignored by ORIX and only the proper rotation is returned.
+        For all orientations and 924/1024 possible symmetry combinations
+        (32^2) for misorientations, this fact is irrelevant, as either
+        only a single proper rotation or an identical proper and
+        improper pair will map to the FZ. The remaining 100 cases occur
+        when both symmetries are improper and do not possess an
+        inversion. In this case, four unique values fall within the FZ,
+        including two proper rotations. One of these is produced using
+        only proper rotations, whereas the second is a `pseudo-proper'
+        rotation resulting from two consecutive rotoinversions. Since
+        pseudo-proper variants cannot be reached through any combination
+        of proper rotations from either symmetry, they are ignored by
+        orix and only the proper rotation is returned.
         """
         # Combine symmetry elements of start and end of transformation
         # given by the (mis)orientation
         start, end = self._symmetry
         symmetry_pairs = iproduct(start, end)
+
         if verbose:
             symmetry_pairs = tqdm(symmetry_pairs, total=start.size * end.size)
 
@@ -461,9 +458,9 @@ class Misorientation(Rotation):
         # (orientation) or MacKenzie (misorientation) fundamental zone
         # (FZ), given by the symmetry elements. We loop over all
         # symmetry pairs and rotate all (mis)orientations until all are
-        # inside the FZ. Ignore symmetry combinations that need an inversion,
-        # as these are not handled by the MacKenzie/Rodrigues definitions of
-        # a fundamental zone.
+        # inside the FZ. Ignore symmetry combinations that need an
+        # inversion, as these are not handled by the MacKenzie/Rodrigues
+        # definitions of a FZ.
         fz = OrientationRegion.from_symmetry(start=start, end=end)
         reduced = self.__class__.identity(self.shape)
         is_outside = np.ones(self.shape, dtype=bool)
@@ -474,9 +471,12 @@ class Misorientation(Rotation):
             is_outside = ~(reduced < fz)
             if not is_outside.any():
                 break
-        # convert to northern hemisphere representations
+
+        # Convert to northern hemisphere representations
         reduced.data[reduced.a < 0] = reduced.data[reduced.a < 0] * -1
+
         reduced._symmetry = (start, end)
+
         return reduced
 
     def scatter(
