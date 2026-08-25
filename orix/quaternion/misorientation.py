@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 from itertools import product as iproduct
+import logging
 from typing import Any, Literal, overload
 import warnings
 
@@ -40,6 +41,15 @@ from orix.quaternion.symmetry import (
     _get_unique_symmetry_elements,
 )
 from orix.vector.miller import Miller
+
+# logging, currently only used by reduce.
+_logger = logging.getLogger(__name__)
+_logger.setLevel(logging.DEBUG)
+stream_handler = logging.StreamHandler()
+_logger.addHandler(stream_handler)
+
+
+
 
 
 class Misorientation(Rotation):
@@ -703,7 +713,7 @@ class Misorientation(Rotation):
         ----------
         weights
             Weights for calculating a weighted average. Must be of the
-            same size as the (mis)orientation.
+            same size as the (mis)orientation, or None.
         include_improper
             Whether to exclude equivalent representations that require
             inversion symmetry to calculate. Default is False.
@@ -768,7 +778,7 @@ class Misorientation(Rotation):
         symmetry_pairs = iproduct(Rotation(start), Rotation(end))
 
         if verbose:
-            print("reducing to fundamental zone...")
+            _logger.info("reducing to fundamental zone...")
 
         # Overwrite new nearest values into neighbors. Use rotations for
         # calculating the candidate for inclusion in neighbors.
@@ -778,7 +788,7 @@ class Misorientation(Rotation):
         max_dp = rot.dot(rough_mean)
 
         if verbose:
-            print("checking for closer equivalent representations...")
+            _logger.info("checking for closer equivalent representations...")
             symmetry_pairs = tqdm(symmetry_pairs, total=start.size * end.size)
 
         for start, end in symmetry_pairs:
