@@ -91,11 +91,12 @@ def _get_large_cell_normals(
 
     return normals
 
+
 @deprecated(since="0.15", removal="0.16", alternative="get_asymmetric_groups")
 def get_proper_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetry]:
     """Return groups for defining an asymmetric domains as
     parameterized by Morawiec.
-    
+
     Depreciated in favor of 'get_asymmetric_groups'.
 
     Parameters
@@ -112,7 +113,8 @@ def get_proper_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetr
     end
         Final proper, inversion, or laue subgroup as appropriate.
     """
-    return get_asymmetric_groups(start,end)
+    return get_asymmetric_groups(start, end)
+
 
 def get_asymmetric_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetry]:
     """Return groups for defining an asymmetric domains as
@@ -270,7 +272,7 @@ class OrientationRegion(Rotation):
         non-centrosymmetric crystals), ORIX allows defining
         fundamental zones that include improper elements for all
         1024 possible misorientation combinations.
-        
+
         For 704 combinations, including all orientations and any
         misorientation with centrosymmetry, this is irrelevant as
         both methods exactly reduce to the same 121 cases

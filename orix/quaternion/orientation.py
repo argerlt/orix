@@ -643,8 +643,7 @@ class Orientation(Misorientation):
         all_dot_products = Rotation(M).dot_outer(symmetry)
         highest_dot_products = np.max(all_dot_products, axis=-1)
         return highest_dot_products
-    
-    
+
     def dot_outer(self, other: Orientation) -> np.ndarray:
         """Return the symmetry reduced dot products of all orientations
         to all other orientations.

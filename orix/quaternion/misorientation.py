@@ -49,9 +49,6 @@ stream_handler = logging.StreamHandler()
 _logger.addHandler(stream_handler)
 
 
-
-
-
 class Misorientation(Rotation):
     r"""Misorientations :math:`M`.
 
