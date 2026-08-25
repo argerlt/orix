@@ -638,10 +638,13 @@ class Orientation(Misorientation):
         >>> O1.dot(O2)
         array([0.92387953, 0.92387953])
         """
-        sym = [self.symmetry, other.symmetry]
-        M = Misorientation(other * ~self, symmetry=sym).reduce()
-        return M.a
-
+        symmetry = _get_unique_symmetry_elements(self.symmetry, other.symmetry)
+        M = other * ~self
+        all_dot_products = Rotation(M).dot_outer(symmetry)
+        highest_dot_products = np.max(all_dot_products, axis=-1)
+        return highest_dot_products
+    
+    
     def dot_outer(self, other: Orientation) -> np.ndarray:
         """Return the symmetry reduced dot products of all orientations
         to all other orientations.
@@ -669,9 +672,15 @@ class Orientation(Misorientation):
         array([[0.92387953, 1.        ],
                [1.        , 0.92387953]])
         """
-        sym = [self.symmetry, other.symmetry]
-        M = Misorientation(other.outer(~self), symmetry=sym).reduce()
-        return M.a
+        symmetry = _get_unique_symmetry_elements(self.symmetry, other.symmetry)
+        M = other.outer(~self)
+        all_dot_products = Rotation(M).dot_outer(symmetry)
+        highest_dot_products = np.max(all_dot_products, axis=-1)
+        # need to return axes order so that self is first
+        order = tuple(range(other.ndim, self.ndim + other.ndim)) + tuple(
+            range(other.ndim)
+        )
+        return highest_dot_products.transpose(*order)
 
     def plot_unit_cell(
         self,

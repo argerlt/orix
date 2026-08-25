@@ -91,11 +91,32 @@ def _get_large_cell_normals(
 
     return normals
 
-
-@deprecated(since="0.15", removal="0.16")
+@deprecated(since="0.15", removal="0.16", alternative="get_asymmetric_groups")
 def get_proper_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetry]:
-    """Return the appropriate groups for the asymmetric domain
-    calculation.
+    """Return groups for defining an asymmetric domains as
+    parameterized by Morawiec.
+    
+    Depreciated in favor of 'get_asymmetric_groups'.
+
+    Parameters
+    ----------
+    start
+        Initial point group, C1 for orientations.
+    end
+        Ending point group.
+
+    Returns
+    -------
+    start
+        Initial proper, inversion, or laue subgroup as appropriate.
+    end
+        Final proper, inversion, or laue subgroup as appropriate.
+    """
+    return get_asymmetric_groups(start,end)
+
+def get_asymmetric_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetry]:
+    """Return groups for defining an asymmetric domains as
+    parameterized by Morawiec.
 
     Parameters
     ----------
@@ -113,25 +134,20 @@ def get_proper_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetr
 
     Notes
     -----
-    ORIX follows the asymmetric domain/fundamental zone definitions
-    from in :cite:`krakow2017onthree`. However, for reasons given
-    in section 3(b), that paper only defines domains for the 121
-    combinations of proper point groups. Orix extends their logic for
-    defining domains to the remaining 903 point group combinations,
-    which are always repetitions of the original 121.
+    This function implements the if/then logic from section 6.3.1 of
+    :cite:`morawiec2004orientations` for defining the asymmetric
+    domain of a misorientation, which is roughly equivalent to the
+    concept of a fundamental zone as used in ORIX. It's output can be
+    used with OrientationRegion.from_symmetry() to reproduce results
+    from that textbook.
 
-    This expansion is unimportant for all orientations as well
-    as any misorientations where at least on point group is proper
-    and/or centrosymmetric, which together accounts for 924 of the
-    possible 1024 possible misorientation symmetries. This includes
-    all data from EBSD due to the artificial centrosymmetry caused by
-    kikuchi diffraction. For the remaining 100 misorientations where
-    both point groups are improper but don't contain an inversion
-    (for example, 6mm-->6mm), there are up to four rotations that
-    map to the fundamental zone; a proper, two improper, and a
-    pseudo-proper created from two roto-inversions. Common practice
-    in these edge cases is to ignore all but the proper rotation, as
-    is done in :func:`Misorientation.reduce`.
+    Because this method intentionally omits misorientation symmetries
+    where combinations of rotoinversions create an ambiguous
+    definition of the fundamental zone, ORIX has instead adopted a
+    method based on :cite:`krakow2017onthree`, which is detailed
+    in the docstring for :func:`OrientationRegion.from_symmetry()`.
+    However, this definition is also still in use, so this function
+    is provided for convenience.
     """
     if start.is_proper and end.is_proper:
         return start, end
@@ -238,22 +254,27 @@ class OrientationRegion(Rotation):
 
         Notes
         -----
-        ORIX follows the asymmetric domain/fundamental zone definitions
-        from in :cite:`krakow2017onthree`. However, for reasons given
-        in section 3(b), domains are only described for the 121
-        combinations of proper point groups. Section 5.3.1 of
-        :cite"martineau2020multivariate" gives pseudocode for
-        extending this original logic to define domains for all 1024
-        possible symmetry cases.
+        ORIX follows the fundamental zone definitions described
+        in :cite:`krakow2017onthree`, except in regard to the
+        handling of improper symmetry elements. As described in
+        section 3(b) of that paper, fundamental zone boundaries
+        created by improper rotations represent operations that
+        cannot be achieved through rigid body rotations. As a
+        result, it is often appropriate to ignore these elements,
+        a practice ORIX also defaults to in functions such as
+        :func:`Orientation.reduce` and :func:`Orientation.mean`.
 
-        This ends up being a trivial terminology issue for all
-        orientations as well as any misorientations where both point
-        groups are proper and/or centrosymmetric. This includes all
-        EBSD data as well, since kikuchi diffraction introduces an
-        artificial centrosymmetry. For these 704 cases, either the
-        region returned bounds a fully unique zone, or it bounds
-        all proper representations, and the improper representations
-        have identical quaternion representations.
+        However, in order to support the rare exceptions where
+        improper fundamental zone boundaries might be relevant (for
+        example, grain boundary misorientation distributions between
+        non-centrosymmetric crystals), ORIX allows defining
+        fundamental zones that include improper elements for all
+        1024 possible misorientation combinations.
+        
+        For 704 combinations, including all orientations and any
+        misorientation with centrosymmetry, this is irrelevant as
+        both methods exactly reduce to the same 121 cases
+        described in :cite:`krakow2017onthree`.
 
         For the remaining 320 misorientations where one or both
         point groups contain rotoinversions but are not
@@ -261,9 +282,9 @@ class OrientationRegion(Rotation):
         one and possibly two improper rotations that also map to the
         orientation region but with unique quaternion values, as well
         as a possible unique pseudo-proper rotation only achievable
-        through two rotoinversions. There is currently no concensus
-        on how to define unique fundamental zones for these edge
-        cases.
+        through two rotoinversions. In these cases, ORIX will return
+        the fundamental zone bounding the unique proper and
+        pseudo-proper representations.
         """
         if s1 is not None:
             start = s1

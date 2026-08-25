@@ -1121,7 +1121,7 @@ class Quaternion(Object3d):
         ----------
         weights
             Weights for calculating a weighted average. Must be of the
-            same size as the quaternion.
+            same size as the quaternion, or None.
 
         Returns
         -------
