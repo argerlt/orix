@@ -739,6 +739,6 @@ class TestOrientation:
         # assert shape is correct
         o1 = Orientation.random(shape=(2, 3, 4), symmetry=T)
         o2 = Orientation.random(shape=(5, 6), symmetry=D3)
-        o12 = o2.dot_outer(o1)
+        o12 = o1.dot_outer(o2)
         assert o12.shape == (2, 3, 4, 5, 6)
         assert np.all(o12[1, 2, :, 3, 2] == o2[3, 2].dot(o1[1, 2, :]))
