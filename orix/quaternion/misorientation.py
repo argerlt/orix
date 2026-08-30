@@ -417,16 +417,9 @@ class Misorientation(Rotation):
         mori
             New misorientation with the assigned symmetry.
 
-        Examples
+        See Also
         --------
-        >>> from orix.quaternion import Misorientation
-        >>> from orix.quaternion.symmetry import C4, C2
-        >>> mori = Misorientation([[0.5, 0.5, 0.5, 0.5], [0, 1, 0, 0]])
-        >>> mori.symmetry = (C4, C2)
-        >>> mori.reduce()
-        Misorientation (2,) 4, 2
-        [[-0.7071 0.     -0.7071  0.    ]
-        [ 0.      1.      0.      0.    ]]
+        :class:`~orix.quaternion.OrientationRegion`
 
         Notes
         -----
@@ -452,6 +445,17 @@ class Misorientation(Rotation):
         pseudo-proper variants cannot be reached through any combination
         of proper rotations from either symmetry, they are ignored by
         orix and only the proper rotation is returned.
+
+        Examples
+        --------
+        >>> from orix.quaternion import Misorientation
+        >>> from orix.quaternion.symmetry import C4, C2
+        >>> mori = Misorientation([[0.5, 0.5, 0.5, 0.5], [0, 1, 0, 0]])
+        >>> mori.symmetry = (C4, C2)
+        >>> mori.reduce()
+        Misorientation (2,) 4, 2
+        [[-0.7071 0.     -0.7071  0.    ]
+        [ 0.      1.      0.      0.    ]]
         """
         # Combine symmetry elements of start and end of transformation
         # given by the (mis)orientation
@@ -736,7 +740,7 @@ class Misorientation(Rotation):
         This method uses the Frobenius norm of rotation space to define
         a mean for rotations, as given in equations 12 and 13 of
         :cite:`markley_averaging_2007`. Refer to
-        :func:`~orix.quaternion.Quaternion.mean` for details.
+        :meth:`~orix.quaternion.Quaternion.mean` for details.
 
         To account for symmetry, the following procedure is used:
 
