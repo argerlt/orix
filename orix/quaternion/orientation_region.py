@@ -92,28 +92,36 @@ def _get_large_cell_normals(
     return normals
 
 
-@deprecated(since="0.15", removal="0.16", alternative="get_asymmetric_groups")
-def get_proper_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetry]:
-    """Return groups for defining an asymmetric domains as
-    parameterized by Morawiec.
-
-    Depreciated in favor of 'get_asymmetric_groups'.
+# TODO: Remove once 0.16.0 is released
+@deprecated(since="0.16.0", removal="0.17.0", alternative="get_asymmetric_groups")
+def get_proper_groups(Gl: Symmetry, Gr: Symmetry) -> tuple[Symmetry, Symmetry]:
+    """Return the appropriate groups for the asymmetric domain
+    calculation.
 
     Parameters
     ----------
-    start
-        Initial point group, C1 for orientations.
-    end
-        Ending point group.
+    Gl
+        First point group.
+    Gr
+        Second point group.
 
     Returns
     -------
-    start
-        Initial proper, inversion, or laue subgroup as appropriate.
-    end
-        Final proper, inversion, or laue subgroup as appropriate.
+    Gl
+        First proper subgroup(s) or proper inversion subgroup(s), as
+        appropriate.
+    Gr
+        Second proper subgroup(s) or proper inversion subgroup(s), as
+        appropriate.
+
+    Raises
+    ------
+    NotImplementedError
+        If both groups are improper and neither contain an inversion,
+        special consideration is needed which is not yet implemented in
+        orix.
     """
-    return get_asymmetric_groups(start, end)
+    return get_asymmetric_groups(start=Gl, end=Gr)
 
 
 def get_asymmetric_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetry]:

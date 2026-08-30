@@ -6,40 +6,62 @@ All user facing changes to this project are documented in this file. The format 
 on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`__, and this project tries
 its best to adhere to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`__.
 
-
-2026-06-10 - version 0.15.0
-===========================
+Unreleased
+==========
 
 Added
 -----
 - ``Quaternion.mean(weight)`` allows the calculation of weighted averages.
 - ``Misorientation.get_distance_matrix(lazy=True)``.
   Currently opt-in, but will be the default in the next minor version.
+- Function ``orix.quaternion.get_asymmetric_groups()`` to return two point groups for
+  creating the fundamental zone for a set of two point groups.
+  This function replaces ``get_proper_groups()``.
+
+Changed
+-------
+- Misorientations and Orientations account for symmetry when calculating means.
+- an OrientationRegion can now be calculated from symmetry for all 1024 possible combinations
+  of point groups (previously not implimented for 200 combinations).
+
+Fixed
+-----
+- Setting a Rotaion will now copy over the proper/improper marker if present.
+- `Orientation.dot` and `Orientation.dot_outer` now correctly handle dot products for
+  multi-dimensional inputs.
+
+Deprecated
+----------
+- ``orix.quaternion.get_proper_groups()`` is deprecated and will be removed in 0.17.0.
+  Use the new ``orix.quaternion.get_asymmetric_groups()`` instead.
+
+Removed
+-------
+
+
+2026-06-10 - version 0.15.0
+===========================
+
+Added
+-----
 - Non-lazy computation of dot products with
   ``Misorientation.get_distance_matrix(lazy=True)``.
   Currently opt-in, but will be the default in the next minor version.
 
 Changed
 -------
-- Misorientations and Orientations account for symmetry when calculating means.
 - ``Miller.get_nearest()`` now raises a ``NotImplementedError`` rather than returning
   ``NotImplemented``.
 - ``Mille.mean(use_symmetry=True)`` now raises a ``NotImplementedError`` rather than
   returning ``NotImplemented``.
 - Improved (faster and using less memory) non-lazy computation of misorientation angles
   from ``Orientation.with_angle_outer()``.
-- an OrientationRegion can now be calculated from symmetry for all 1024 possible combinations
-  of point groups (previously not implimented for 200 combinations).
 
 Fixed
 -----
 - (Mis)orientation reduction to the fundamental zone via ``reduce()`` now correctly
   applies the symmetries in the opposite order, from right to left,
   `s_end * g * s_start`, where `g` is a (mis)orientation.
-- Setting a Rotaion will now copy over the proper/improper marker if present.
-- `Orientation.dot` and `Orientation.dot_outer` now correctly handle dot products for
-  multi-dimensional inputs.
-  
 
 
 2026-06-06 - version 0.14.3
