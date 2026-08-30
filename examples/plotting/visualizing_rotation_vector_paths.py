@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -31,6 +31,7 @@ to transform from point to point, which is typically not a stright line when plo
 into a euclidean projection (axis-angle, stereographic, etc.).
 """
 
+# %%
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -48,7 +49,7 @@ np.random.seed(2319)  # Reproducible random data
 # Number of steps along each path
 n_steps = 30
 
-########################################################################################
+# %%
 # Example 1: Continuous path
 # ==========================
 #
@@ -75,7 +76,7 @@ colors1 = np.vstack(
 path.scatter(marker=">", c=colors1)
 _ = plt.gca().set_title("Axis-angle space, two 90\N{DEGREE SIGN} rotations")
 
-########################################################################################
+# %%
 # Example 2: Multiple paths
 # =========================
 #
@@ -119,12 +120,11 @@ for ori_start in oris2[1:]:
     rod_ax.scatter(path, c=colors2)
     ipf_ax.scatter(path, c=colors2)
 
-########################################################################################
+# %%
 # Example 3: Multiple vector paths
 # ================================
 #
 # Rotate vectors around the (1, 1, 1) axis on a stereographic plot.
-
 
 fig3 = plt.figure()
 vec_ax = fig3.add_subplot(111, projection="stereographic")
