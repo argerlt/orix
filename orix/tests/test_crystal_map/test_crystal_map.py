@@ -23,7 +23,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from orix._utils.constants import installed
 from orix.crystal_map import (
     CrystalMap,
     Phase,
@@ -34,6 +33,7 @@ from orix.crystal_map.crystal_map import _data_slices_from_coordinates
 from orix.plot import CrystalMapPlot
 from orix.quaternion import Orientation, Rotation
 from orix.quaternion.symmetry import C2, C3, C4, O
+from orix.utils._constants import installed
 
 # Note that many parts of the crystal map class are tested while testing
 # IO and the phase classes

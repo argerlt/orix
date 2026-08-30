@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -17,4 +17,11 @@
 # along with orix. If not, see <http://www.gnu.org/licenses/>.
 #
 
-"""Private utilities used across modules."""
+"""Utilities."""
+
+import lazy_loader
+
+# Imports from stub file (see contributor guide for details)
+__getattr__, __dir__, __all__ = lazy_loader.attach_stub(__name__, __file__)
+
+del lazy_loader

@@ -23,11 +23,11 @@ import itertools
 
 import numpy as np
 
-from orix._utils import constants
-from orix._utils.deprecation import deprecated, deprecated_argument
 from orix.quaternion.quaternion import Quaternion
 from orix.quaternion.rotation import Rotation
 from orix.quaternion.symmetry import C1, Symmetry, get_distinguished_points
+from orix.utils import _constants
+from orix.utils._deprecation import deprecated, deprecated_argument
 from orix.vector.neo_euler import Rodrigues
 
 
@@ -228,8 +228,8 @@ class OrientationRegion(Rotation):
         """
         c = Quaternion(self).dot_outer(Quaternion(other))
         inside = np.logical_or(
-            np.all(np.greater_equal(c, -constants.eps9), axis=0),
-            np.all(np.less_equal(c, constants.eps9), axis=0),
+            np.all(np.greater_equal(c, -_constants.eps9), axis=0),
+            np.all(np.less_equal(c, _constants.eps9), axis=0),
         )
         return inside
 
@@ -411,8 +411,8 @@ class OrientationRegion(Rotation):
         from orix.vector import Vector3d
 
         # Get a grid of vector directions
-        theta = np.linspace(0, 2 * np.pi - constants.eps9, 361)
-        rho = np.linspace(0, np.pi - constants.eps9, 181)
+        theta = np.linspace(0, 2 * np.pi - _constants.eps9, 361)
+        rho = np.linspace(0, np.pi - _constants.eps9, 181)
         theta, rho = np.meshgrid(theta, rho)
         g = Vector3d.from_polar(rho, theta)
 

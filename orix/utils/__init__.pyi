@@ -17,20 +17,9 @@
 # along with orix. If not, see <http://www.gnu.org/licenses/>.
 #
 
-import pytest
+from ._logging import set_log_level
 
-from orix.utils._constants import installed
-
-
-class TestConstants:
-    @pytest.mark.skipif(
-        installed["numpy-quaternion"], reason="numpy-quaternion is installed"
-    )
-    def test_numpy_quaternion_not_installed(self):
-        assert not installed["numpy-quaternion"]
-
-    @pytest.mark.skipif(
-        not installed["numpy-quaternion"], reason="numpy-quaternion is installed"
-    )
-    def test_numpy_quaternion_installed(self):
-        assert installed["numpy-quaternion"]
+# Lazily imported in module init
+__all__ = [
+    "set_log_level",
+]

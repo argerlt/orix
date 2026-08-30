@@ -20,7 +20,6 @@
 import numpy as np
 import pytest
 
-from orix._utils.constants import VisibleDeprecationWarning
 from orix.quaternion import Orientation, OrientationRegion
 from orix.quaternion.orientation_region import (
     _get_large_cell_normals,
@@ -38,6 +37,7 @@ from orix.quaternion.symmetry import (
     Csz,
     get_distinguished_points,
 )
+from orix.utils._constants import VisibleDeprecationWarning
 
 
 class TestOrientationRegion:
