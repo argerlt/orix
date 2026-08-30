@@ -725,20 +725,19 @@ class TestOrientation:
         o2 = o.reduce(verbose=True)
         assert np.allclose(o1.data, o2.data)
 
-    # @pytest.mark.flaky(reruns=3)
     def test_reduce_all_groups(self):
+        # In the past, this test has needed a flaky flag.
+        # https://github.com/pyxem/orix/pull/669 should have fixed the
+        # underlying issue, but leaving a note here in case a similar
+        # bug occurs in the future.
         np.random.seed(2319)
         for group in _groups:
             ori = Orientation.random(symmetry=group)
-            # NOTE: in the past, this test has needed a flaky flag. PR 669
-            # should have fixed the underlying issue, but leaving a note here
-            # in case a similar bug occurs in the future/
             assert np.isclose(ori.angle_with(ori.reduce()), 0)
 
-    def test_dot(self):
-        # assert shape is correct
-        o1 = Orientation.random(shape=(2, 3, 4), symmetry=T)
-        o2 = Orientation.random(shape=(5, 6), symmetry=D3)
-        o12 = o1.dot_outer(o2)
-        assert o12.shape == (2, 3, 4, 5, 6)
-        assert np.all(o12[1, 2, :, 3, 2] == o2[3, 2].dot(o1[1, 2, :]))
+    def test_dot_outer_shape(self):
+        ori1 = Orientation.random(shape=(2, 3, 4), symmetry=T)
+        ori2 = Orientation.random(shape=(5, 6), symmetry=D3)
+        dp12 = ori1.dot_outer(ori2)
+        assert dp12.shape == (2, 3, 4, 5, 6)
+        assert np.isclose(dp12[1, 2, 3, 4, 5], ori1[1, 2, 3].dot(ori2[4, 5]))
