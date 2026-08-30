@@ -15,6 +15,7 @@ Added
 - Function ``get_asymmetric_groups()`` to return two point groups for creating the
   fundamental zone for a set of two point groups.
   This function replaces ``get_proper_groups()``.
+- Function to set the log level of orix logs, ``orix.utils.set_log_level()``.
 
 Changed
 -------
