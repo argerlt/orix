@@ -39,16 +39,12 @@ from orix.crystal_map._phase_list import PhaseList
 from orix.crystal_map.crystal_map import CrystalMap, create_coordinate_arrays
 from orix.plot import register_projections
 from orix.quaternion.rotation import Rotation
-import orix.utils as ous
 
 # --------------------------- pytest hooks --------------------------- #
 
 
 def pytest_sessionstart(session):
     register_projections()
-
-    # Ensure all tests start out with this default log level
-    ous.set_log_level("WARNING")
 
 
 # -------------------- Control of test selection --------------------- #

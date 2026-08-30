@@ -28,7 +28,8 @@ class TestLogging:
         ori = oqu.Orientation.random(10)
 
         logger = logging.getLogger("orix")
-        assert logger.level == 0  # Warning
+        ous.set_log_level("WARNING")
+        assert logger.level == 30
 
         _ = ori.mean()
 
