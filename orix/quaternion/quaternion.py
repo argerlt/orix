@@ -1139,7 +1139,7 @@ class Quaternion(Object3d):
             M = \sum_{n=1}^{n}{wq_i \cdot q_i^T},
             q_{mean} = \max_{q \in SO(3)} \left( q^T \cdot M \cdot q \right),
 
-        which gives the Frobenius norm of rotation space (SO(3)). This
+        which gives the Frobenius norm of rotation space (*SO(3)*). This
         is different from the following Euclidean-style equation
         occasionally used elsewhere in crystallography
 
@@ -1149,21 +1149,24 @@ class Quaternion(Object3d):
 
         which gives the Frobenius norm of quaternion space (SU(2)).
         These are roughly identical for closely clustered quaternions,
-        but---as explained in
-        :cite:`markley_averaging_2007`---increasingly deviate as the
-        spread in the data increases.
+        but---as explained in :cite:`markley_averaging_2007`---
+        increasingly deviate as the spread in the data increases.
         """
         Q = self.flatten().data.T
+
         if weights is not None:
             weights = np.asanyarray(weights).flatten()[:, np.newaxis]
             QQ = Q.dot(weights * Q.T)
         else:
             QQ = Q.dot(Q.T)
-        w, v = np.linalg.eig(QQ)
+
+        w, v = np.linalg.eigh(QQ)
         v_mean = v[:, np.argmax(w)]
-        # flip if necessary.
+
+        # Flip if necessary
         if v_mean[0] < 0:
             v_mean = v_mean * -1
+
         return self.__class__(v_mean)
 
     def outer(
