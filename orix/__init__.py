@@ -17,7 +17,7 @@
 # along with orix. If not, see <http://www.gnu.org/licenses/>.
 #
 
-__version__ = "0.15.dev4"
+__version__ = "0.16.dev0"
 
 # Sorted by line contributions (ideally excluding lines in notebook
 # files)
@@ -39,4 +39,5 @@ __credits__ = [
     "Dorian Depriester",
     "Eric Prestat",
     "Alexander Clausen",
+    "Vincent Gao",
 ]

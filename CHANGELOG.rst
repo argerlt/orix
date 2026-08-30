@@ -26,6 +26,8 @@ Changed
 
 Fixed
 -----
+- ``Rotation.to_euler()`` now returns correct Bunge Euler angles for 180 degree
+  rotations about an axis in the xy-plane not aligned with x or y.
 - Setting a Rotaion will now copy over the proper/improper marker if present.
 - `Orientation.dot` and `Orientation.dot_outer` now correctly handle dot products for
   multi-dimensional inputs.
@@ -39,7 +41,7 @@ Removed
 -------
 
 
-2026-06-10 - version 0.15.0
+2026-06-29 - version 0.15.0
 ===========================
 
 Added
