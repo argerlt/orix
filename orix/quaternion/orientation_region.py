@@ -125,8 +125,8 @@ def get_proper_groups(Gl: Symmetry, Gr: Symmetry) -> tuple[Symmetry, Symmetry]:
 
 
 def get_asymmetric_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Symmetry]:
-    """Return groups for defining an asymmetric domains as
-    parameterized by Morawiec.
+    """Return groups for defining a fundamental zone (orientation
+    region) for (mis)orientations :cite:`morawiec2004orientations`.
 
     Parameters
     ----------
@@ -142,22 +142,24 @@ def get_asymmetric_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Sym
     end
         Final proper, inversion, or laue subgroup as appropriate.
 
+    See Also
+    --------
+    :meth:`~orix.quaternion.OrientationRegion.from_symmetry`
+
     Notes
     -----
-    This function implements the if/then logic from section 6.3.1 of
-    :cite:`morawiec2004orientations` for defining the asymmetric
-    domain of a misorientation, which is roughly equivalent to the
-    concept of a fundamental zone as used in ORIX. It's output can be
-    used with OrientationRegion.from_symmetry() to reproduce results
-    from that textbook.
+    Parametrization of the fundamental zone follows section 6.3.1 in
+    :cite:`morawiec2004orientations`. The output can be used with
+    :meth:`~orix.quaternion.OrientationRegion.from_symmetry` to
+    reproduce results from that textbook.
 
     Because this method intentionally omits misorientation symmetries
     where combinations of rotoinversions create an ambiguous
-    definition of the fundamental zone, ORIX has instead adopted a
-    method based on :cite:`krakow2017onthree`, which is detailed
-    in the docstring for :func:`OrientationRegion.from_symmetry()`.
-    However, this definition is also still in use, so this function
-    is provided for convenience.
+    definition of the fundamental zone, orix has instead adopted a
+    method based on :cite:`krakow2017onthree` (see
+    :meth:`~orix.quaternion.OrientationRegion.from_symmetry`). However,
+    this definition is also still in use, so this function is provided
+    for convenience.
     """
     if start.is_proper and end.is_proper:
         return start, end
@@ -180,18 +182,18 @@ class OrientationRegion(Rotation):
     """A subset of rotation space.
 
     The complete set of all possible rigid body rotations is called
-    SO(3). it can be thought of as half the quaternion unit sphere,
-    the entirety of Rodrigues space, the set of all 3x3 matrices
-    with a determinate of 1, or various other descriptors based
-    on the application.
+    *SO(3)*. It can be thought of as half the quaternion unit sphere,
+    the entirety of Rodrigues space, the set of all 3x3 matrices with a
+    determinant of 1, or various other descriptors based on the
+    application.
 
-    Sometimes, this whole space is not need, for example if the
-    orientation of an object is constrained or (most commonly) if
-    the object is symmetrical. In this case, the space can be
-    segmented using set of rotations representing boundaries in the
-    space. This can be most easily visualized using Rodrigues
-    space, where the boundaries become flat planes normal to the
-    rodrigues vectors of those bounding rotations.
+    Sometimes, this whole space is not needed, for example if the
+    orientation of an object is constrained or (most commonly) if the
+    object is symmetrical. In this case, the space can be segmented
+    using set of rotations representing boundaries in the space. This
+    can be most easily visualized using Rodrigues space, where the
+    boundaries become flat planes normal to the rodrigues vectors of
+    those bounding rotations.
 
     .. image:: /_static/img/orientation-region-Oq.png
        :width: 300px
@@ -201,16 +203,18 @@ class OrientationRegion(Rotation):
     Quaternions can then be quickly defined as inside or outside of
     these regions via a dot product operation.
 
-    Notably, these regions are only defined in SO(3), which means
-    they cannot account for improper operations. This is why
-    OrientationRegion.from_symmetry() calculates identical regions
-    for point groups 432 and m-3m despite m-3m having twice as many
-    distinguished points. This ends up being irrelevant for
-    Orientations since any improper operations that place a point
-    within a fundamental zone always have a paired proper operation
-    that returns an identical quaternion, but it can create confusion
-    for misorientations with rotoinversions when users assume an
-    OrientationRegion can uniquely define a true fundamental zone.
+    Notes
+    -----
+    Notably, these regions are only defined in *SO(3)*, which means they
+    cannot account for improper operations. This is why
+    :meth:`from_symmetry` calculates identical regions for point groups
+    *432* and *m-3m* despite *m-3m* having twice as many distinguished
+    points. This ends up being irrelevant for orientations since any
+    improper operation that places a point within a fundamental zone
+    always has a paired proper operation that returns an identical
+    quaternion, but it can create confusion for misorientations with
+    rotoinversions when we assume an orientation region can uniquely
+    define a true fundamental zone.
     """
 
     # ------------------------ Dunder methods ------------------------ #
@@ -231,9 +235,10 @@ class OrientationRegion(Rotation):
 
     # ------------------------ Class methods ------------------------- #
 
+    # TODO: Remove deprecations and handling once 0.16.0 is released
     @classmethod
-    @deprecated_argument("s1", since="0.15", removal="0.16", alternative="start")
-    @deprecated_argument("s2", since="0.15", removal="0.16", alternative="end")
+    @deprecated_argument("s1", since="0.16.0", removal="0.17.0", alternative="start")
+    @deprecated_argument("s2", since="0.16.0", removal="0.17.0", alternative="end")
     def from_symmetry(
         cls,
         start: Symmetry = C1,
@@ -242,13 +247,6 @@ class OrientationRegion(Rotation):
         s2=None,
     ) -> OrientationRegion:
         """Return an orientation region for a given symmetry.
-
-        These regions are identical to the fundamental zone for all
-        orientations and every misorientation where both
-        symmetries are proper and/or centrosymmetric. For
-        all other cases, it is still garunteed to inlude only one
-        unique represenation achievable though proper rotations.See
-        Notes for details.
 
         Parameters
         ----------
@@ -264,42 +262,45 @@ class OrientationRegion(Rotation):
 
         Notes
         -----
-        ORIX follows the fundamental zone definitions described
-        in :cite:`krakow2017onthree`, except in regard to the
-        handling of improper symmetry elements. As described in
-        section 3(b) of that paper, fundamental zone boundaries
-        created by improper rotations represent operations that
-        cannot be achieved through rigid body rotations. As a
-        result, it is often appropriate to ignore these elements,
-        a practice ORIX also defaults to in functions such as
-        :func:`Orientation.reduce` and :func:`Orientation.mean`.
+        These regions are identical to the fundamental zone (FZ) for all
+        orientations and every misorientation where both symmetries are
+        proper and/or centrosymmetric. For all other cases, it is still
+        garunteed to inlude only one unique representation achievable
+        through proper rotations.
 
-        However, in order to support the rare exceptions where
-        improper fundamental zone boundaries might be relevant (for
-        example, grain boundary misorientation distributions between
-        non-centrosymmetric crystals), ORIX allows defining
-        fundamental zones that include improper elements for all
-        1024 possible misorientation combinations.
+        orix follows the FZ definitions described in
+        :cite:`krakow2017onthree`, except when it comes to handling of
+        improper symmetry elements. As described in section 3(b) of that
+        paper, FZ boundaries created by improper rotations represent
+        operations that cannot be achieved through rigid body rotations.
+        As a result, it is often appropriate to ignore these elements, a
+        practice orix also defaults to in operations such as orientation
+        :meth:`~orix.quaternion.Orientation.reduce` and
+        :meth:`~orix.quaternion.Orientation.mean`.
+
+        However, in order to support the rare exceptions where improper
+        FZ boundaries might be relevant (for example, grain boundary
+        misorientation distributions between non-centrosymmetric
+        crystals), orix allows defining FZs that include improper
+        elements for all 1024 possible combinations of two symmetries.
 
         For 704 combinations, including all orientations and any
         misorientation with centrosymmetry, this is irrelevant as
-        both methods exactly reduce to the same 121 cases
-        described in :cite:`krakow2017onthree`.
-
-        For the remaining 320 misorientations where one or both
-        point groups contain rotoinversions but are not
-        centrosymmetric (for example, 6mm --> 6mm), there are always
-        one and possibly two improper rotations that also map to the
-        orientation region but with unique quaternion values, as well
-        as a possible unique pseudo-proper rotation only achievable
-        through two rotoinversions. In these cases, ORIX will return
-        the fundamental zone bounding the unique proper and
-        pseudo-proper representations.
+        both methods exactly reduce to the same 121 cases described in
+        :cite:`krakow2017onthree`. For the remaining 320 combinations
+        where one or both point groups contain rotoinversions but are
+        not centrosymmetric (for example, *6mm* --> *6mm*), there are
+        always one and possibly two improper rotations that also map to
+        the FZ but with unique quaternion values, as well as a possible
+        unique pseudo-proper rotation only achievable through two
+        rotoinversions. In these cases, orix will return the FZ bounding
+        the unique proper and pseudo-proper representations.
         """
         if s1 is not None:
             start = s1
         if s2 is not None:
             end = s2
+
         # Step 1: fundamental zones are only defined for proper rotations.
         # add inversion centers where necessary to define as unique as
         # possible of a fundamental zone, then remove all improper operators.
@@ -353,6 +354,7 @@ class OrientationRegion(Rotation):
         vertices = region.vertices()
         if vertices.size:
             region = region[np.any(np.isclose(region.dot_outer(vertices), 0), axis=1)]
+
         return region
 
     # --------------------- Other public methods --------------------- #
