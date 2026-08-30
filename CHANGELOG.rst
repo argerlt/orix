@@ -11,31 +11,29 @@ Unreleased
 
 Added
 -----
-- ``Quaternion.mean(weight)`` allows the calculation of weighted averages.
-- ``Misorientation.get_distance_matrix(lazy=True)``.
-  Currently opt-in, but will be the default in the next minor version.
-- Function ``orix.quaternion.get_asymmetric_groups()`` to return two point groups for
-  creating the fundamental zone for a set of two point groups.
+- Mean quaternion calculation now allows weighting each quaternion.
+- Function ``get_asymmetric_groups()`` to return two point groups for creating the
+  fundamental zone for a set of two point groups.
   This function replaces ``get_proper_groups()``.
 
 Changed
 -------
-- Misorientations and Orientations account for symmetry when calculating means.
-- an OrientationRegion can now be calculated from symmetry for all 1024 possible combinations
-  of point groups (previously not implimented for 200 combinations).
+- Misorientations and orientations account for symmetry when calculating means.
+- An orientation region can now be calculated from every combination of two point groups
+  (previously not possible for 200/1024 combinations).
 
 Fixed
 -----
 - ``Rotation.to_euler()`` now returns correct Bunge Euler angles for 180 degree
   rotations about an axis in the xy-plane not aligned with x or y.
 - Setting a Rotaion will now copy over the proper/improper marker if present.
-- `Orientation.dot` and `Orientation.dot_outer` now correctly handle dot products for
-  multi-dimensional inputs.
+- Orientation outer dot product now correctly handles order of axes for
+  multi-dimensional orientations.
 
 Deprecated
 ----------
-- ``orix.quaternion.get_proper_groups()`` is deprecated and will be removed in 0.17.0.
-  Use the new ``orix.quaternion.get_asymmetric_groups()`` instead.
+- ``get_proper_groups()`` is deprecated and will be removed in 0.17.0.
+  Use the new ``get_asymmetric_groups()`` instead.
 
 Removed
 -------
@@ -63,7 +61,7 @@ Fixed
 -----
 - (Mis)orientation reduction to the fundamental zone via ``reduce()`` now correctly
   applies the symmetries in the opposite order, from right to left,
-  `s_end * g * s_start`, where `g` is a (mis)orientation.
+  ``s_end * g * s_start``, where ``g`` is a (mis)orientation.
 
 
 2026-06-06 - version 0.14.3
