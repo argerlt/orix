@@ -108,7 +108,6 @@ doctest_optionflags = "NORMALIZE_WHITESPACE"
 filterwarnings = [
     "ignore:Deprecated call to `pkg_resources:DeprecationWarning",
     "ignore:pkg_resources is deprecated as an API:DeprecationWarning",
-    "ignore:'diffpy.structure.expandPosition':DeprecationWarning:",
 ]
 markers = [
     "slow: mark test as slow",
