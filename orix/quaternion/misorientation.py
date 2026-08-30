@@ -42,11 +42,7 @@ from orix.quaternion.symmetry import (
 )
 from orix.vector.miller import Miller
 
-# logging, currently only used by reduce.
 _logger = logging.getLogger(__name__)
-_logger.setLevel(logging.DEBUG)
-stream_handler = logging.StreamHandler()
-_logger.addHandler(stream_handler)
 
 
 class Misorientation(Rotation):
@@ -778,9 +774,7 @@ class Misorientation(Rotation):
 
         symmetry_pairs = iproduct(Rotation(start), Rotation(end))
 
-        if verbose:
-            _logger.info("reducing to fundamental zone...")
-
+        _logger.info("Reducing to fundamental zone")
         # Overwrite new nearest values into neighbors. Use rotations for
         # calculating the candidate for inclusion in neighbors.
         neighbors = self.reduce(verbose=verbose)
@@ -789,9 +783,9 @@ class Misorientation(Rotation):
         max_dp = rot.dot(rough_mean)
 
         if verbose:
-            _logger.info("checking for closer equivalent representations...")
             symmetry_pairs = tqdm(symmetry_pairs, total=start.size * end.size)
 
+        _logger.info("Checking for closer equivalent representations")
         for start, end in symmetry_pairs:
             candidates = end * rot * start
             dp = np.abs(candidates.dot(rough_mean))
