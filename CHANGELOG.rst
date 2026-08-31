@@ -25,6 +25,7 @@ Fixed
 -----
 - ``Rotation.to_euler()`` now returns correct Bunge Euler angles for 180 degree
   rotations about an axis in the xy-plane not aligned with x or y.
+- Silenced warnings from diffpy.structure >= 3.4.
 
 
 2026-06-29 - version 0.15.0
