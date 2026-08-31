@@ -158,8 +158,8 @@ def get_asymmetric_groups(start: Symmetry, end: Symmetry) -> tuple[Symmetry, Sym
     definition of the fundamental zone, orix has instead adopted a
     method based on :cite:`krakow2017onthree` (see
     :meth:`~orix.quaternion.OrientationRegion.from_symmetry`). However,
-    this definition is also still in use, so this function is provided
-    for convenience.
+    asymmetric domains are still used elsewhere, so this function is
+    provided for convenience.
     """
     if start.is_proper and end.is_proper:
         return start, end
@@ -190,7 +190,7 @@ class OrientationRegion(Rotation):
     Sometimes, this whole space is not needed, for example if the
     orientation of an object is constrained or (most commonly) if the
     object is symmetrical. In this case, the space can be segmented
-    using set of rotations representing boundaries in the space. This
+    using sets of rotations representing boundaries in the space. This
     can be most easily visualized using Rodrigues space, where the
     boundaries become flat planes normal to the rodrigues vectors of
     those bounding rotations.
