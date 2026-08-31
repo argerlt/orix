@@ -463,7 +463,7 @@ class Misorientation(Rotation):
         _logger.info(log_txt)
         if verbose:
             symmetry_pairs = tqdm(symmetry_pairs, total=start.size * end.size)
-            sys.stderr.write(log_txt+'\n')
+            sys.stderr.write(log_txt + "\n")
 
         # Find the (mis)orientations which lie inside the Rodrigues
         # (orientation) or MacKenzie (misorientation) fundamental zone
@@ -789,7 +789,7 @@ class Misorientation(Rotation):
         _logger.info(log_txt)
         if verbose:
             symmetry_pairs = tqdm(symmetry_pairs, total=start.size * end.size)
-            sys.stderr.write(log_txt+'\n')
+            sys.stderr.write(log_txt + "\n")
 
         for start, end in symmetry_pairs:
             candidates = end * rot * start
