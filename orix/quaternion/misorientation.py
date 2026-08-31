@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from itertools import product as iproduct
 import logging
+import sys
 from typing import Any, Literal, overload
 import warnings
 
@@ -774,7 +775,11 @@ class Misorientation(Rotation):
 
         symmetry_pairs = iproduct(Rotation(start), Rotation(end))
 
-        _logger.info("Reducing to fundamental zone")
+        log_txt1 = "Reducing to fundamental zone"
+        _logger.info(log_txt1)            
+        if verbose:
+            sys.stderr.write(f"{log_txt1}\n")
+
         # Overwrite new nearest values into neighbors. Use rotations for
         # calculating the candidate for inclusion in neighbors.
         neighbors = self.reduce(verbose=verbose)
@@ -782,10 +787,12 @@ class Misorientation(Rotation):
         rough_mean = rot.mean(weights=weights)
         max_dp = rot.dot(rough_mean)
 
+        log_txt2 = "Checking for closer equivalent representations"
+        _logger.info(log_txt2)
         if verbose:
             symmetry_pairs = tqdm(symmetry_pairs, total=start.size * end.size)
+            sys.stderr.write(f"{log_txt2}\n")
 
-        _logger.info("Checking for closer equivalent representations")
         for start, end in symmetry_pairs:
             candidates = end * rot * start
             dp = np.abs(candidates.dot(rough_mean))
