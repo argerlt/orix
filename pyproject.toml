@@ -32,6 +32,7 @@ dependencies = [
     "matplotlib             >= 3.6.1",
     "numba",
     "numpy",
+    "packaging",
     "pooch                  >= 0.13",
     # TODO: Remove once diffpy.structure >= 3.2.1
     "pycifrw",

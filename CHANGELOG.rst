@@ -23,10 +23,14 @@ Changed
 - An orientation region can now be calculated from every combination of two point groups
   (previously not possible for 200/1024 combinations).
 
+Removed
+-------
+
 Fixed
 -----
 - ``Rotation.to_euler()`` now returns correct Bunge Euler angles for 180 degree
   rotations about an axis in the xy-plane not aligned with x or y.
+- Silenced warnings from diffpy.structure >= 3.4.
 - Setting a Rotaion will now copy over the proper/improper marker if present.
 - Orientation outer dot product now correctly handles order of axes for
   multi-dimensional orientations.
@@ -35,9 +39,6 @@ Deprecated
 ----------
 - ``get_proper_groups()`` is deprecated and will be removed in 0.17.0.
   Use the new ``get_asymmetric_groups()`` instead.
-
-Removed
--------
 
 
 2026-06-29 - version 0.15.0
