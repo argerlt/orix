@@ -459,8 +459,11 @@ class Misorientation(Rotation):
         start, end = self._symmetry
         symmetry_pairs = iproduct(start, end)
 
+        log_txt = "Reducing to fundamental zone"
+        _logger.info(log_txt)
         if verbose:
             symmetry_pairs = tqdm(symmetry_pairs, total=start.size * end.size)
+            sys.stderr.write(log_txt+'\n')
 
         # Find the (mis)orientations which lie inside the Rodrigues
         # (orientation) or MacKenzie (misorientation) fundamental zone
@@ -775,11 +778,6 @@ class Misorientation(Rotation):
 
         symmetry_pairs = iproduct(Rotation(start), Rotation(end))
 
-        log_txt1 = "Reducing to fundamental zone"
-        _logger.info(log_txt1)            
-        if verbose:
-            sys.stderr.write(f"{log_txt1}\n")
-
         # Overwrite new nearest values into neighbors. Use rotations for
         # calculating the candidate for inclusion in neighbors.
         neighbors = self.reduce(verbose=verbose)
@@ -787,11 +785,11 @@ class Misorientation(Rotation):
         rough_mean = rot.mean(weights=weights)
         max_dp = rot.dot(rough_mean)
 
-        log_txt2 = "Checking for closer equivalent representations"
-        _logger.info(log_txt2)
+        log_txt = "Checking for closer equivalent representations"
+        _logger.info(log_txt)
         if verbose:
             symmetry_pairs = tqdm(symmetry_pairs, total=start.size * end.size)
-            sys.stderr.write(f"{log_txt2}\n")
+            sys.stderr.write(log_txt+'\n')
 
         for start, end in symmetry_pairs:
             candidates = end * rot * start
