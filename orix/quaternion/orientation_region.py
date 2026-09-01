@@ -69,6 +69,10 @@ def _get_large_cell_normals(
     if distinguished_points is None:
         distinguished_points = get_distinguished_points(s1=start, s2=end)
 
+    # Remove points with a rotation angle of zero (the identity and its
+    # antipodal), which would produce an infinite Rodrigues vector
+    distinguished_points = distinguished_points[distinguished_points.angle > 0]
+
     if distinguished_points.size == 0:
         return Rotation.empty()
 
