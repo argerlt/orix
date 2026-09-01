@@ -443,6 +443,10 @@ class Misorientation(Rotation):
         of proper rotations from either symmetry, they are ignored by
         orix and only the proper rotation is returned.
 
+        If *verbose* is True, the progress bar will most likely
+        terminate before trying all iterations, as all (mis)orientations
+        are within the fundamental zone already.
+
         Examples
         --------
         >>> from orix.quaternion import Misorientation
@@ -459,11 +463,13 @@ class Misorientation(Rotation):
         start, end = self._symmetry
         symmetry_pairs = iproduct(start, end)
 
-        log_txt = "Reducing to fundamental zone"
-        _logger.info(log_txt)
+        log_msg = "Reducing to fundamental zone"
         if verbose:
-            symmetry_pairs = tqdm(symmetry_pairs, total=start.size * end.size)
-            sys.stderr.write(log_txt + "\n")
+            symmetry_pairs = tqdm(
+                symmetry_pairs, total=start.size * end.size, desc=log_msg
+            )
+        else:
+            _logger.info(log_msg)
 
         # Find the (mis)orientations which lie inside the Rodrigues
         # (orientation) or MacKenzie (misorientation) fundamental zone
@@ -785,11 +791,13 @@ class Misorientation(Rotation):
         rough_mean = rot.mean(weights=weights)
         max_dp = rot.dot(rough_mean)
 
-        log_txt = "Checking for closer equivalent representations"
-        _logger.info(log_txt)
+        log_msg = "Checking for closer equivalent representations"
         if verbose:
-            symmetry_pairs = tqdm(symmetry_pairs, total=start.size * end.size)
-            sys.stderr.write(log_txt + "\n")
+            symmetry_pairs = tqdm(
+                symmetry_pairs, total=start.size * end.size, desc=log_msg
+            )
+        else:
+            _logger.info(log_msg)
 
         for start, end in symmetry_pairs:
             candidates = end * rot * start
