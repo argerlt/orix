@@ -227,6 +227,33 @@ class TestVector3d:
         with pytest.raises(AttributeError):
             vector.cross(number)
 
+    def test_tensor(self, vector, number):
+        # test definition of tensor in orthonormal space
+        a = Vector3d.random()
+        b = Vector3d.random()
+        c = Vector3d.random()
+        abc = np.dot((a.tensor(b)[0]),c.data[0])
+        bca = (b.dot(c)*a).data
+        assert np.allclose(abc,bca)
+        # repeat test with tensor_outer method
+        abc_outer = np.dot((a.tensor_outer(b)[0]),c.data[0])
+        assert np.allclose(abc_outer,bca)
+        # test casting
+        v1 = Vector3d.random((3, 4))
+        v2 = Vector3d.random((3, 4))
+        v3 = Vector3d.random((2, 3, 4))
+        v4 = Vector3d.random(( 3, 1, 4))
+        assert v1.tensor(v2).shape == (3, 4, 3, 3)
+        assert v1.tensor(v3).shape == (2, 3, 4, 3, 3)
+        assert v1.tensor(v4).shape == (3, 3, 4, 3, 3)
+        assert v1.tensor_outer(v2).shape == (3, 4, 3, 4, 3, 3)
+        assert v1.tensor_outer(v3).shape == (3, 4, 2, 3, 4, 3, 3)
+        # For both functions, test errors
+        with pytest.raises(ValueError):
+            vector.tensor(number)
+        with pytest.raises(ValueError):
+            vector.tensor_outer(number)
+
     @pytest.mark.parametrize(
         "azimuth, polar, radial, expected",
         [

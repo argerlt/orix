@@ -686,6 +686,8 @@ class Vector3d(Object3d):
             Numpy array of tensor products with shape
             (self.shape, other.shape, 3, 3)
         """
+        if not isinstance(other,Vector3d):
+            raise ValueError(f"{other} is not a vector")
         return np.stack(
             [
                 np.stack(
