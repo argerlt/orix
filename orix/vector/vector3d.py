@@ -608,7 +608,7 @@ class Vector3d(Object3d):
         """
         return other.__class__(np.cross(self.data, other.data))
 
-    def tensor(self, other:Vector3d) -> Vector3d:
+    def tensor(self, other: Vector3d) -> Vector3d:
         r"""Return the tensor product of a vector with another vector.
 
         For multi-dimensional arrays of vectors, casting is done the
@@ -663,9 +663,9 @@ class Vector3d(Object3d):
         dimensions of both Vector3d objects, use 
         :func:`Vector3d.tensor_outer`.
     """
-        if not isinstance(other,Vector3d):
+        if not isinstance(other, Vector3d):
             raise ValueError(f"{other} is not a vector")
-        return np.einsum('...i,...j->...ij', self.data, other.data)
+        return np.einsum("...i,...j->...ij", self.data, other.data)
 
     def tensor_outer(self, other: Vector3d) -> Vector3d:
         r"""Return the outer tensor product of a vector with another
@@ -686,7 +686,7 @@ class Vector3d(Object3d):
             Numpy array of tensor products with shape
             (self.shape, other.shape, 3, 3)
         """
-        if not isinstance(other,Vector3d):
+        if not isinstance(other, Vector3d):
             raise ValueError(f"{other} is not a vector")
         return np.stack(
             [

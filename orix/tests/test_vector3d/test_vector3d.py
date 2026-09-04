@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2025 the orix developers
+# Copyright 2018-2026 the orix developers
 #
 # This file is part of orix.
 #
@@ -100,7 +100,7 @@ class TestVector3d:
         assert np.allclose(s1.data, s2.data)
         # check error messages
         with pytest.raises(TypeError):
-            _ = vector + 'dracula'
+            _ = vector + "dracula"
 
     @pytest.mark.parametrize(
         "vector, other, expected",
@@ -125,7 +125,7 @@ class TestVector3d:
         assert np.allclose(-s1.data, s2.data)
         # check error messages
         with pytest.raises(TypeError):
-            _ = vector - 'dracula'
+            _ = vector - "dracula"
 
     @pytest.mark.parametrize(
         "vector, other, expected",
@@ -147,7 +147,7 @@ class TestVector3d:
         with pytest.raises(ValueError):
             _ = vector * Vector3d([[1, 2, 3], [-3, -2, -1]])
         with pytest.raises(TypeError):
-            _ = vector * 'dracula'
+            _ = vector * "dracula"
 
     @pytest.mark.parametrize(
         "vector, other, expected",
@@ -175,7 +175,7 @@ class TestVector3d:
         with pytest.raises(ValueError):
             _ = vector * Vector3d([[1, 2, 3], [-3, -2, -1]])
         with pytest.raises(TypeError):
-            _ = vector * 'dracula'
+            _ = vector * "dracula"
         with pytest.raises(ValueError):
             _ = 1 / Vector3d.xvector()
 
@@ -200,7 +200,6 @@ class TestVector3d:
         assert np.allclose(vector.dot(something), something.dot(vector))
         with pytest.raises(ValueError):
             vector.dot(number)
-
 
     def test_dot_outer(self, vector, something, capsys):
         # Test dot_outer
@@ -232,17 +231,17 @@ class TestVector3d:
         a = Vector3d.random()
         b = Vector3d.random()
         c = Vector3d.random()
-        abc = np.dot((a.tensor(b)[0]),c.data[0])
-        bca = (b.dot(c)*a).data
-        assert np.allclose(abc,bca)
+        abc = np.dot((a.tensor(b)[0]), c.data[0])
+        bca = (b.dot(c) * a).data
+        assert np.allclose(abc, bca)
         # repeat test with tensor_outer method
-        abc_outer = np.dot((a.tensor_outer(b)[0]),c.data[0])
-        assert np.allclose(abc_outer,bca)
+        abc_outer = np.dot((a.tensor_outer(b)[0]), c.data[0])
+        assert np.allclose(abc_outer, bca)
         # test casting
         v1 = Vector3d.random((3, 4))
         v2 = Vector3d.random((3, 4))
         v3 = Vector3d.random((2, 3, 4))
-        v4 = Vector3d.random(( 3, 1, 4))
+        v4 = Vector3d.random((3, 1, 4))
         assert v1.tensor(v2).shape == (3, 4, 3, 3)
         assert v1.tensor(v3).shape == (2, 3, 4, 3, 3)
         assert v1.tensor(v4).shape == (3, 3, 4, 3, 3)
@@ -285,11 +284,11 @@ class TestVector3d:
     def test_angle_with(self, vector, something):
         a1 = vector.angle_with(vector)
         assert np.allclose(a1, 0)
-    
+
         a2 = vector.angle_with(something)
         assert np.all(a2 >= 0)
         assert np.all(a2 <= np.pi)
-    
+
         a3 = vector.angle_with(something, degrees=True)
         assert np.allclose(np.rad2deg(a2), a3)
 
@@ -345,16 +344,16 @@ class TestVector3d:
     )
     def test_assign_xyz(self, vector, change):
         array = vector.data
-        #test assignments to x
-        array[...,0] = change
+        # test assignments to x
+        array[..., 0] = change
         vector.x = change
         assert np.allclose(vector.data, array)
-        #test assignments to y
-        array[...,1] = change
+        # test assignments to y
+        array[..., 1] = change
         vector.y = change
         assert np.allclose(vector.data, array)
-        #test assignments to z
-        array[...,2] = change
+        # test assignments to z
+        array[..., 2] = change
         vector.z = change
         assert np.allclose(vector.data, array)
 
@@ -383,7 +382,7 @@ class TestVector3d:
     def test_transpose_1d(self):
         v1 = Vector3d.random(7)
         v2 = v1.transpose()
-    
+
         assert np.allclose(v1.data, v2.data)
 
     def test_transpose(self):
@@ -391,7 +390,7 @@ class TestVector3d:
         v_3d = Vector3d.random((2, 3, 4))
         v_4d = Vector3d.random((2, 1, 3, 4))
         # expected to work for 2D shapes
-        assert v_2d.transpose().shape == (6,4)
+        assert v_2d.transpose().shape == (6, 4)
         # should not work for generic 3d without guidance
         with pytest.raises(ValueError, match="Axes must be defined for more than"):
             _ = v_3d.transpose()
@@ -399,15 +398,15 @@ class TestVector3d:
         with pytest.raises(ValueError, match="Number of axes is ill-defined"):
             _ = v_3d.transpose(0, 2)
         # But will work for full axes reordering list
-        assert v_3d.transpose(0,2,1).shape == (2, 4, 3)
-        assert v_4d.transpose(0,2,1,3).shape == (2, 3, 1, 4)
+        assert v_3d.transpose(0, 2, 1).shape == (2, 4, 3)
+        assert v_4d.transpose(0, 2, 1, 3).shape == (2, 3, 1, 4)
 
     def test_get_nearest(self):
         v_ref = Vector3d.zvector()
         v = Vector3d([[0, 0, 0.9], [0, 0, 0.8], [0, 0, 1.1]])
         v_nearest = v_ref.get_nearest(v)
         assert np.allclose(v_nearest.data, [0, 0, 0.9])
-    
+
         with pytest.raises(AttributeError, match="`get_nearest` only works for "):
             v.get_nearest(v_ref)
 
