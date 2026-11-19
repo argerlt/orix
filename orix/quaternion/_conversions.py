@@ -905,12 +905,15 @@ def om2qu_single(om: np.ndarray) -> np.ndarray:
     This function is optimized with Numba, so care must be taken with
     array shapes and data types.
     """
-    trace = om[0, 0] + om[1, 1] + om[2, 2]
 
     qu = np.zeros(4, dtype=np.float64)
 
-    if trace >= om[0, 0] and trace >= om[1, 1] and trace >= om[2, 2]:
-        a = 0.5 * np.sqrt(1 + trace)
+    if (
+        om[1, 1] + om[2, 2] >= 0
+        and om[0, 0] + om[2, 2] >= 0
+        and om[0, 0] + om[1, 1] >= 0
+    ):
+        a = 0.5 * np.sqrt(1 + om[0, 0] + om[1, 1] + om[2, 2])
         f = 0.25 / a
         qu[0] = a
         qu[1] = f * (om[2, 1] - om[1, 2])
@@ -940,9 +943,6 @@ def om2qu_single(om: np.ndarray) -> np.ndarray:
 
     if qu[0] < 0:
         qu = -qu
-
-    norm = np.sqrt(np.sum(np.square(qu)))
-    qu = qu / norm
 
     return qu
 
@@ -981,7 +981,13 @@ def om2qu(om: np.ndarray) -> np.ndarray:
     om3d = om.reshape((-1, 3, 3))
     om3d = om3d.astype(np.float64)
 
-    qu = om2qu_3d(om3d)
+    # normalize the matrix
+    U, S, Vt = np.linalg.svd(om3d)
+    d = np.linalg.det(U @ Vt)
+    Vt[d<0,-1,:] *= -1
+    om3d_rbr = U @ Vt
+
+    qu = om2qu_3d(om3d_rbr)
     qu = qu.reshape(om.shape[:-2] + (4,))
 
     return qu
